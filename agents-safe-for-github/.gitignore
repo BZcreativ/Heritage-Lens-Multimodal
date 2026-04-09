@@ -1,0 +1,32 @@
+# OpenClaw Agents - Git Ignore
+# Place this in your agents directory to exclude sensitive files
+
+# NEVER commit these - they contain API keys and credentials
+models.json
+auth-profiles.json
+*.key
+*.pem
+.env
+
+# Session data (conversation history)
+sessions/
+sessions.json
+*.jsonl
+*.jsonl.reset.*
+
+# Internal state
+.openclaw/
+workspace-state.json
+
+# Downloads and temporary files
+downloads/
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db

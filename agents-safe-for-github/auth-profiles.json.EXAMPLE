@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "default": {
+      "provider": "kimi",
+      "apiKey": "YOUR_API_KEY_HERE"
+    }
+  }
+}

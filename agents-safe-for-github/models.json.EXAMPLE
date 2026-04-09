@@ -1,0 +1,45 @@
+{
+  "providers": {
+    "kimi": {
+      "baseUrl": "https://api.kimi.com/coding/",
+      "api": "anthropic-messages",
+      "headers": {
+        "User-Agent": "claude-code/0.1.0"
+      },
+      "models": [
+        {
+          "id": "kimi-code",
+          "name": "Kimi Code",
+          "api": "anthropic-messages",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        }
+      ],
+      "apiKey": "YOUR_KIMI_API_KEY_HERE"
+    },
+    "openai": {
+      "baseUrl": "https://api.openai.com/v1",
+      "api": "openai",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "contextWindow": 128000,
+          "maxTokens": 4096
+        }
+      ],
+      "apiKey": "YOUR_OPENAI_API_KEY_HERE"
+    }
+  }
+}
