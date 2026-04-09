@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Streamlit Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENCLAW_GATEWAY_URL=http://gateway:18789
+      - QDRANT_URL=http://qdrant:6333
+    volumes:
+      - ./app.py:/app/app.py
+      - ./src:/app/src
+      - ./.env:/app/.env
+    depends_on:
+      - qdrant
+    networks:
+      - heritage-network
+    restart: unless-stopped
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - heritage-network
+    restart: unless-stopped
+
+  # OpenClaw Gateway (if available as Docker image)
+  # Uncomment when OpenClaw provides a Docker image
+  # gateway:
+  #   image: openclaw/gateway:latest
+  #   ports:
+  #     - "127.0.0.1:18789:18789"
+  #   volumes:
+  #     - openclaw-data:/root/.openclaw
+  #   networks:
+  #     - heritage-network
+  #   restart: unless-stopped
+
+volumes:
+  qdrant-data:
+  # openclaw-data:
+
+networks:
+  heritage-network:
+    driver: bridge
