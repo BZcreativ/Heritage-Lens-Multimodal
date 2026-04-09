@@ -1,0 +1,194 @@
+# =============================================================================
+# HERITAGE LENS PROJECT - GITIGNORE
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SYSTEM / DOT FILES (User Requested Exclusions)
+# -----------------------------------------------------------------------------
+.bash_history
+.bash_logout
+.bashrc
+.cache/
+.claude/
+.claude.json
+.codex/
+.config/
+.docker/
+.local/
+.npm/
+.openclaw/
+.profile
+PYEOF
+.streamlit/
+.sudo_as_admin_successful
+.viminfo
+.vscode/
+
+# Additional system files
+.ssh/
+.gnupg/
+.lesshst
+.mysql_history
+.pgpass
+.python_history
+.wgetrc
+.vim/
+.viminfo
+.zsh_history
+.zshrc
+
+# -----------------------------------------------------------------------------
+# SENSITIVE CREDENTIALS - NEVER COMMIT
+# -----------------------------------------------------------------------------
+# API Keys and Secrets
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+!config/.env.example
+config/.env
+config/.env.*
+!*.env.example
+
+# OpenClaw specific secrets
+.openclaw/agents/*/agent/models.json
+.openclaw/agents/*/agent/auth-profiles.json
+.openclaw/credentials/
+.openclaw/agents/*/sessions/
+.openclaw/**/sessions/
+.openclaw/**/downloads/
+.openclaw/**/.git/
+
+# Cloudflare and tunnel configs with tokens
+cloudflared/
+*.tunnel.json
+tunnel-credentials.json
+
+# -----------------------------------------------------------------------------
+# PYTHON / VIRTUAL ENVIRONMENTS
+# -----------------------------------------------------------------------------
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+.mypy_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# -----------------------------------------------------------------------------
+# DATABASES AND DATA FILES
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.sqlitedb
+qdrant_storage/
+redis_data/
+data/extracted_images/
+data/text_chunks/
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+
+# Document Registry
+document_registry.db
+*.db-journal
+*.db-wal
+
+# -----------------------------------------------------------------------------
+# LOGS AND TEMPORARY FILES
+# -----------------------------------------------------------------------------
+*.log
+logs/
+log/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.bak
+*.backup
+*.old
+*.orig
+
+# -----------------------------------------------------------------------------
+# IDE AND EDITOR FILES
+# -----------------------------------------------------------------------------
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.vs/
+*.user
+
+# -----------------------------------------------------------------------------
+# PROJECT SPECIFIC EXCLUSIONS
+# -----------------------------------------------------------------------------
+# Large model files and embeddings
+*.bin
+*.safetensors
+*.onnx
+*.pth
+*.pt
+*.ckpt
+*.h5
+embeddings.pkl
+
+# User uploads and generated content
+uploads/
+user_data/
+corpus/
+!data/corpus/.gitkeep
+
+# Ngrok and tunnel configs
+ngrok.yml
+ngrok.yaml
+ngrok.json
+
+# Docker volumes (if stored locally)
+docker-volumes/
+
+# -----------------------------------------------------------------------------
+# EXCEPTIONS - FILES TO INCLUDE
+# -----------------------------------------------------------------------------
+!heritage-lens-multimodal/config/.env.example
+!heritage-lens-multimodal/.env.example
+!heritage-lens-multimodal/config/settings.yaml
+!heritage-lens-multimodal/config/prompts.yaml
+
+# Include the safe agents export
+!.openclaw/agents-safe-for-github/
+!.openclaw/agents-safe-for-github/**
+.github_token
