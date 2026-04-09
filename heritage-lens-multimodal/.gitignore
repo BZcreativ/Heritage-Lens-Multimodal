@@ -1,0 +1,247 @@
+# =============================================================================
+# HERITAGE LENS - COMPREHENSIVE .GITIGNORE
+# =============================================================================
+# This file excludes sensitive data, user content, and generated files from git.
+# Last updated: 2026-04-08
+# =============================================================================
+
+# =============================================================================
+# 🔐 SECRETS & ENVIRONMENT VARIABLES (NEVER COMMIT!)
+# =============================================================================
+# API keys, database passwords, cloud credentials - anything sensitive
+config/.env
+.env
+.env.*
+!.env.example                  # Allow example files for documentation
+*.key
+*.pem
+*.crt
+*.p12
+secrets.yaml
+secrets.yml
+secrets.json
+*_secret*
+*secret_*
+*password*
+*credential*
+
+# =============================================================================
+# 🤖 OPENCLAW CONFIGURATION & STATE
+# =============================================================================
+# OpenClaw agent state, conversation memory, and local configuration
+.openclaw/
+openclaw_config/local/
+conversations/
+conversation_history/
+chat_history/
+logs/openclaw/
+
+# =============================================================================
+# 🗄️ DATABASES & LOCAL STORAGE
+# =============================================================================
+# SQLite databases, local data stores, and ephemeral storage
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+data/*.db
+data/*.sqlite*
+qdrant_storage/                # Local Qdrant vector DB storage
+chroma_storage/
+chromadb/
+*.parquet
+
+# =============================================================================
+# 🖼️ USER DATA & EXTRACTED CONTENT
+# =============================================================================
+# Any user-uploaded or generated content that shouldn't be in git
+data/extracted_images/
+data/text_chunks/
+data/chroma/
+data/uploads/
+data/processed/
+data/cache/
+data/temp/
+uploads/
+media/
+user_files/
+extracted_content/
+processed_pdfs/
+cache/
+
+# =============================================================================
+# 🧠 MODEL CACHE & EMBEDDINGS
+# =============================================================================
+# Large model files and generated embeddings
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.pth
+*.onnx
+*.safetensors
+embeddings/
+models/
+model_cache/
+*.npy
+*.npz
+transformers_cache/
+torch_cache/
+~/.cache/
+
+# =============================================================================
+# 🐍 PYTHON
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+.dmypy.json
+coverage/
+.coverage
+.coverage.*
+.cache/
+*.cover
+.hypothesis/
+.tox/
+.nox/
+
+# =============================================================================
+# 🌐 VIRTUAL ENVIRONMENTS
+# =============================================================================
+venv/
+ENV/
+env/
+.env/
+.venv/
+env.bak/
+venv.bak/
+virtualenv/
+
+# =============================================================================
+# 💻 IDEs & EDITORS
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.code-workspace
+.atom/
+
+# =============================================================================
+# 📊 STREAMLIT
+# =============================================================================
+.streamlit/
+.streamlit/config.toml
+!streamlit/config.toml.example
+
+# =============================================================================
+# 🌐 TUNNELING & DEVELOPMENT TOOLS
+# =============================================================================
+# ngrok, localtunnel, and other tunnel configs
+ngrok.yml
+ngrok.yaml
+.ngrok2/
+.ngrok/
+lt-info.json
+.localtunnel/
+
+# =============================================================================
+# 📜 LOGS
+# =============================================================================
+*.log
+logs/
+log/
+*.log.*
+nohup.out
+
+# =============================================================================
+# 🧪 TESTING & TEMPORARY FILES
+# =============================================================================
+temp/
+tmp/
+temp_*
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.diff
+EOF                          # Accidental heredoc artifacts
+
+# =============================================================================
+# 📦 DOCKER
+# =============================================================================
+.dockerignore
+Dockerfile*
+!Dockerfile
+docker-compose*.yml
+!docker-compose.yml
+
+# =============================================================================
+# ☸️ KUBERNETES
+# =============================================================================
+kubeconfig
+*.kubeconfig
+.kube/
+
+# =============================================================================
+# 📱 OS-SPECIFIC
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =============================================================================
+# 📝 NOTES & PERSONAL FILES
+# =============================================================================
+TODO.txt
+PERSONAL.md
+notes.txt
+scratch/
+
+# =============================================================================
+# ⚠️ EXPLICITLY ALLOW (exceptions to rules above)
+# =============================================================================
+# These patterns override exclusions above - must come last
+!data/.gitkeep
+!data/extracted_images/.gitkeep
+!data/text_chunks/.gitkeep
+!logs/.gitkeep

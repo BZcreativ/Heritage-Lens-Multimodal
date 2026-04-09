@@ -1,0 +1,98 @@
+# Heritage Lens Multimodal Agent Configuration
+
+# Multimodal Feature Flags (Addendum: Optional Enhancement)
+multimodal:
+  enabled: true  # Master switch for multimodal capabilities
+  vision:
+    enabled: true  # Enable CLIP-based image retrieval
+    model: "clip-ViT-B-32"
+    image_collection: "heritage_lens_images"
+  data_pipeline:
+    extract_images_from_pdf: true  # Extract images during PDF ingestion
+  ui:
+    show_images: true  # Display images in UI
+    max_display_images: 3
+
+# LLM Providers
+llm:
+  synthesis:
+    provider: "kimi"
+    model: "kimi-code"
+    temperature: 0.7
+    max_tokens: 2000
+
+  epistemic:
+    provider: "kimi"
+    model: "kimi-code"
+    temperature: 0.5
+    max_tokens: 2000
+
+  critic:
+    provider: "kimi"
+    model: "kimi-code"
+    temperature: 0.3
+    max_tokens: 1500
+
+# Vision Model
+vision:
+  model: "clip-ViT-B-32"
+  cache_enabled: true
+  cache_dir: "./data/cache/image_embeddings"
+  max_image_size: [224, 224]
+  similarity_threshold: 0.75
+
+# Vector Database
+vector_db:
+  text:
+    type: "qdrant"
+    qdrant:
+      url: "http://localhost:6333"
+      collection: "heritage_lens_text"
+      vector_size: 1536
+    chroma:
+      persist_dir: "./data/chroma"
+      collection: "heritage_lens_text"
+
+  image:
+    type: "numpy_cache"
+    cache_file: "./data/cache/image_embeddings.pkl"
+    metadata_file: "./data/cache/image_metadata.json"
+
+# Retrieval Settings
+retrieval:
+  text:
+    top_k: 5
+    similarity_threshold: 0.75
+    search_type: "hybrid"
+  image:
+    top_k: 3
+    similarity_threshold: 0.7
+    page_aware_matching: true
+    page_tolerance: 2
+
+# Orchestrator Settings
+orchestrator:
+  max_revisions: 1
+  timeout_seconds: 45
+  enable_logging: true
+  multimodal_enabled: true
+
+# UI Settings
+ui:
+  framework: "streamlit"
+  host: "0.0.0.0"
+  port: 8501
+  title: "Heritage Lens Multimodal Agent"
+  image_display: true
+  max_display_images: 3
+
+# Data Pipeline
+data_pipeline:
+  pdf_extraction:
+    extract_images: true
+    min_image_size: [100, 100]
+    max_images_per_pdf: 50
+    image_formats: ["png", "jpg"]
+  metadata:
+    enrich: true
+    fields: ["source", "type", "institution", "date", "cultural_context", "language", "perspective", "page"]

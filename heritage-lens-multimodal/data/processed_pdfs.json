@@ -1,0 +1,44 @@
+{
+  "9c85b197ce12e6dc8397f888169daae5": {
+    "pdf_path": "/app/data/corpus/Heritage Lens Agent - Actionable Project Document.pdf",
+    "processed_at": "2026-04-07T01:48:39.302229",
+    "text_chunks_count": 7,
+    "images_count": 7,
+    "status": "success"
+  },
+  "47d0e958f7f1d90148fad04bd3cd7fea": {
+    "pdf_path": "/app/data/corpus/MESOAMERICA TRA SEGNO E SIGNIFICATO.pdf",
+    "processed_at": "2026-04-07T19:49:55.287530",
+    "text_chunks_count": 181,
+    "images_count": 50,
+    "status": "success"
+  },
+  "c6c8c8bfdf4dc2018c65a0632485939d": {
+    "pdf_path": "/app/data/corpus/Formazione della Citta in Mesoamerica.pdf",
+    "processed_at": "2026-04-07T19:53:23.570282",
+    "text_chunks_count": 161,
+    "images_count": 50,
+    "status": "success"
+  },
+  "bb2e6c477a45db45d2c48b842c3ad89e": {
+    "pdf_path": "/app/data/corpus/RDO25relazionefinale - Copy.pdf",
+    "processed_at": "2026-04-07T19:56:56.667071",
+    "text_chunks_count": 6,
+    "images_count": 10,
+    "status": "success"
+  },
+  "2113a209d48e0cccba2fe7d5b6b6598e": {
+    "pdf_path": "/app/data/corpus/IMG_20260408_222026.jpg",
+    "processed_at": "2026-04-08T16:54:24.882704",
+    "text_chunks_count": 1,
+    "images_count": 1,
+    "status": "success"
+  },
+  "2d2271e9cde6556d270005b63bbf5128": {
+    "pdf_path": "/app/data/corpus/Le Teste Colossali.pdf",
+    "processed_at": "2026-04-08T20:09:32.703781",
+    "text_chunks_count": 0,
+    "images_count": 17,
+    "status": "success"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "heritage-lens-multimodal",
+  "description": "Heritage Lens Multimodal Agent for cultural heritage exploration with 3-layer output",
+  "version": "1.0.0",
+  "system": "You are the Heritage Lens Multimodal orchestrator. Your role is to coordinate sub-agents to produce 3-layer outputs (Answer, Attribution, Epistemic Transparency) for cultural heritage queries. Always provide: 1) A clear, helpful answer with image references when available, 2) Sources and attribution for the information, 3) Transparency about confidence levels and any uncertainties.",
+  "capabilities": [
+    "text_retrieval",
+    "image_retrieval",
+    "multimodal_synthesis",
+    "epistemic_analysis",
+    "3_layer_output"
+  ],
+  "model": {
+    "provider": "openrouter",
+    "model": "openai/gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 2000
+  },
+  "multimodal": {
+    "enabled": true,
+    "vision_model": "clip-ViT-B-32",
+    "image_analysis": true,
+    "max_images": 3,
+    "page_aware_matching": true
+  },
+  "output_format": {
+    "layers": 3,
+    "include_images": true,
+    "include_attribution": true,
+    "include_epistemic": true
+  },
+  "integrations": {
+    "qdrant": {
+      "enabled": true,
+      "url": "http://localhost:6333",
+      "collection": "heritage_lens_text"
+    },
+    "redis": {
+      "enabled": true,
+      "url": "redis://localhost:6379"
+    }
+  }
+}
