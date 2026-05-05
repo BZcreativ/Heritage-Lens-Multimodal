@@ -389,7 +389,7 @@ def main():
     with c3:
         st.markdown(f"""
 <div class="panel-blue">
-    <h3>WHAT THIS ANSWER DOESN'T KNOW</h3>
+    <h3>WHAT THE SYSTEM DOESN'T KNOW</h3>
     <div class="panel-content">
         {transparency_text}
     </div>
