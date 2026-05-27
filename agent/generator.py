@@ -97,7 +97,7 @@ You MUST output a valid JSON object with EXACTLY four keys:
 
 ⚠️ CONFIDENCE
 [Your specific analysis]
-- "layer_4_image_keyword": A key 1-2 word noun phrase (e.g. "ossidiana" or "olmeca") drawn directly from the topic of the answer, suitable for an exact text-search in the original PDF.
+- "layer_4_image_keyword": A key 1-2 word noun phrase (e.g. "ossidiana" or "olmeca") drawn directly from the topic of the answer. IMPORTANT: Since the original PDFs are written in Italian or Spanish, this keyword MUST be written in the original language of the retrieved sources (e.g. Italian or Spanish, NOT translated to the user's query language) so that it can be found using an exact text search in the PDF.
 
 For Layer 3, critically analyse the evidence explicitly using the SYSTEM METADATA AGGREGATION below. 
 You must identify 'Dominant Patterns' by interpreting the counts of source_types and institutions.
@@ -109,7 +109,7 @@ RETRIEVED SOURCES:
 {context_str}
 
 FINAL RE-AFFIRMATION RULE:
-You MUST output your entire response in the EXACT SAME LANGUAGE as the user's query below. If the user's query is in English, EVERY SINGLE WORD of your JSON output must be translated to English, despite the sources above being entirely in Italian.
+You MUST output your entire response in the EXACT SAME LANGUAGE as the user's query below. If the user's query is in English, EVERY SINGLE WORD of your JSON output (except for layer_4_image_keyword) must be translated to English, despite the sources above being entirely in Italian. The layer_4_image_keyword MUST be a 1-2 word noun phrase in the language of the source documents (e.g., Italian or Spanish) to ensure exact matches in the PDF.
 """
     
     if is_weak_retrieval:
