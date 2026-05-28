@@ -348,10 +348,11 @@ def main():
                 
                 # Fetch image if a keyword was provided
                 keyword = result.get("layer_4_image_keyword")
+                retrieved_chunks = result.get("retrieved_chunks", [])
                 if keyword:
                     from agent.image_extractor import extract_image_for_keyword
                     st.toast(f"Scanning academic corpus for visual data matching '{keyword}'...")
-                    image_path = extract_image_for_keyword(keyword)
+                    image_path = extract_image_for_keyword(keyword, retrieved_chunks)
             except Exception as e:
                 ans_text = f"Internal Error: {str(e)}"
 

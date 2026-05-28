@@ -87,12 +87,27 @@ def load_or_build_cache(workspace_dir: str, assets_dir: str) -> dict:
         
     return cache_data
 
-def extract_image_for_keyword(keyword: str) -> str:
+def extract_from_page(page_data: dict, save_path: str, workspace_dir: str) -> bool:
+    pdf_name = page_data["pdf"]
+    page_num = page_data["page_num"]
+    filepath = os.path.join(workspace_dir, pdf_name)
+    try:
+        reader = PdfReader(filepath)
+        page = reader.pages[page_num]
+        for image_obj in page.images:
+            if len(image_obj.data) > 10240:
+                with open(save_path, "wb") as f:
+                    f.write(image_obj.data)
+                return True
+    except Exception as e:
+        print(f"Error extracting image from {pdf_name} page {page_num}: {e}")
+    return False
+
+def extract_image_for_keyword(keyword: str, retrieved_chunks: list = None) -> str:
     """
     Scans internal PDFs for the specified keyword using a pre-built cache. 
-    If a page contains the keyword AND an image > 10KB, it extracts the first image 
-    and saves it to the ui/assets folder, returning the relative path.
-    Returns None if no image is found.
+    Prioritizes pages that were actually retrieved to construct the answer to ensure
+    maximum coherence between the text and the displayed image.
     """
     if not keyword or len(keyword.strip()) < 3:
         return None
@@ -112,27 +127,60 @@ def extract_image_for_keyword(keyword: str) -> str:
     cache_data = load_or_build_cache(workspace_dir, assets_dir)
     pages = cache_data.get("pages", [])
     
-    # Find matching page
-    for page_data in pages:
+    # 1. Parse retrieved chunks into a list of (pdf_name, page_num_0_based)
+    retrieved_pages_order = []
+    retrieved_pages_set = set()
+    if retrieved_chunks:
+        for chunk in retrieved_chunks:
+            meta = chunk.get("metadata", {})
+            pdf_name = meta.get("source_name")
+            page_num_str = meta.get("page_number")
+            if pdf_name and page_num_str:
+                try:
+                    page_num_0 = int(page_num_str) - 1
+                    key = (pdf_name, page_num_0)
+                    if key not in retrieved_pages_set:
+                        retrieved_pages_set.add(key)
+                        retrieved_pages_order.append(key)
+                except ValueError:
+                    continue
+
+    # 2. Separate cache pages into prioritized (retrieved) and others
+    prioritized_pages = []
+    other_pages = []
+    
+    page_map = {(p["pdf"], p["page_num"]): p for p in pages}
+    
+    for key in retrieved_pages_order:
+        if key in page_map:
+            prioritized_pages.append(page_map[key])
+            
+    for p in pages:
+        key = (p["pdf"], p["page_num"])
+        if key not in retrieved_pages_set:
+            other_pages.append(p)
+            
+    # Stage 1: Search retrieved pages that contain the keyword
+    for page_data in prioritized_pages:
         text = page_data["text"]
         if keyword in text.lower():
-            pdf_name = page_data["pdf"]
-            page_num = page_data["page_num"]
-            filepath = os.path.join(workspace_dir, pdf_name)
-            
-            try:
-                reader = PdfReader(filepath)
-                page = reader.pages[page_num]
-                for image_obj in page.images:
-                    if len(image_obj.data) > 10240:
-                        # Extract and save
-                        with open(save_path, "wb") as f:
-                            f.write(image_obj.data)
-                        
-                        print(f"Extracted image from {pdf_name} page {page_num} for keyword '{keyword}'")
-                        return save_path
-            except Exception as e:
-                print(f"Error extracting image from {pdf_name} page {page_num}: {e}")
+            if extract_from_page(page_data, save_path, workspace_dir):
+                print(f"Coherent match: Found keyword '{keyword}' on retrieved page {page_data['page_num']} of {page_data['pdf']}")
+                return save_path
+
+    # Stage 2: Fallback to any image on retrieved pages (regardless of keyword)
+    for page_data in prioritized_pages:
+        if extract_from_page(page_data, save_path, workspace_dir):
+            print(f"Context match: Extracted image from retrieved page {page_data['page_num']} of {page_data['pdf']} without keyword match")
+            return save_path
+
+    # Stage 3: Fallback to non-retrieved pages that contain the keyword
+    for page_data in other_pages:
+        text = page_data["text"]
+        if keyword in text.lower():
+            if extract_from_page(page_data, save_path, workspace_dir):
+                print(f"Fallback match: Found keyword '{keyword}' on non-retrieved page {page_data['page_num']} of {page_data['pdf']}")
+                return save_path
                 
     # No image found containing the keyword
     return None

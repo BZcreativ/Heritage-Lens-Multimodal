@@ -31,6 +31,7 @@ def run_pipeline(query: str, max_retries: int = 2) -> dict:
         
         if is_valid:
             print("-> Judge Evaluation: VALID. Output meets Mission 4 standards.")
+            payload["retrieved_chunks"] = chunks
             return payload
         else:
             # Regenerate logic simplified for this prototype version
@@ -39,4 +40,5 @@ def run_pipeline(query: str, max_retries: int = 2) -> dict:
             # The loop continues to regenerate_response providing the judge's rejection feedback
             
     print("Maximum retries over. Yielding final generated state.")
+    payload["retrieved_chunks"] = chunks
     return payload
