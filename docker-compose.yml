@@ -1,0 +1,31 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: heritage_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:alpine
+    container_name: heritage_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Streamlit runs as a host systemd service (heritage-streamlit.service) to avoid
+  # Docker disk pressure from PyTorch/CUDA layers. See /etc/systemd/system/heritage-streamlit.service.
+
+volumes:
+  qdrant_storage:
+  redis_data:

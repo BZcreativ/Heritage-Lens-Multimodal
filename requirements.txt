@@ -6,6 +6,7 @@ pillow>=10.0.0
 pyyaml>=6.0
 python-dotenv>=1.0.0
 aiohttp>=3.9.0
+redis>=4.5.0
 
 # Data processing
 pandas>=2.0.0
@@ -28,7 +29,7 @@ llama-index-vector-stores-chroma>=0.1.0
 llama-index-embeddings-huggingface>=0.1.0
 
 # Redis client
-redis>=4.0.0
+redis>=4.5.0
 
 # PDF Processing
 pymupdf>=1.23.0
