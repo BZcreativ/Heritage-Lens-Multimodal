@@ -1,9 +1,44 @@
-streamlit
-llama-index
-llama-index-vector-stores-chroma
-chromadb
-pypdf
-llama-index-embeddings-openai
-python-dotenv
-openai
-protobuf==3.20.3
+# Heritage Lens Multimodal Requirements
+
+# Core
+streamlit>=1.28.0
+pillow>=10.0.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+aiohttp>=3.9.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# AI/ML APIs
+openai>=1.0.0
+anthropic>=0.21.0
+google-generativeai>=0.3.0
+
+# Vector DB and Embeddings
+qdrant-client>=1.6.0
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# LlamaIndex
+llama-index>=0.9.0
+llama-index-vector-stores-qdrant>=0.1.0
+llama-index-vector-stores-chroma>=0.1.0
+llama-index-embeddings-huggingface>=0.1.0
+
+# Redis client
+redis>=4.0.0
+
+# PDF Processing
+pymupdf>=1.23.0
+pypdf>=3.0.0
+
+# Image Processing
+opencv-python-headless>=4.8.0
+scikit-image>=0.22.0
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+
+# Optional: Gradio alternative UI
+# gradio>=4.0.0

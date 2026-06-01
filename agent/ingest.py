@@ -8,17 +8,16 @@ try:
     from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Document
     from llama_index.vector_stores.chroma import ChromaVectorStore
     from llama_index.core.node_parser import SentenceSplitter
-    from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.core import Settings
 except ImportError:
     print("WARNING: Missing required dependencies. To run this script, please install:")
-    print("pip install llama-index llama-index-vector-stores-chroma chromadb pypdf llama-index-embeddings-openai")
+    print("pip install llama-index llama-index-vector-stores-chroma chromadb pypdf llama-index-embeddings-huggingface")
 
-# Set up the OpenAI embedding model explicitly as required by the PRD
 try:
-    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    Settings.embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
 except NameError:
-    pass # Catching omission if imports failed above
+    pass
 
 # The non-negotiable metadata mapping for our specific corpora.
 # This JSON projection maps directly to the Layer 3 logic inside 'agent/generator.py'

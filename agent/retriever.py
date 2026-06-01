@@ -8,14 +8,14 @@ try:
     import chromadb
     from llama_index.core import VectorStoreIndex
     from llama_index.vector_stores.chroma import ChromaVectorStore
-    from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.core import Settings
 except ImportError:
     print("WARNING: Missing required dependencies. To run this script, please install:")
-    print("pip install llama-index llama-index-vector-stores-chroma chromadb pypdf llama-index-embeddings-openai")
+    print("pip install llama-index llama-index-vector-stores-chroma chromadb pypdf llama-index-embeddings-huggingface")
 
 def get_retriever():
-    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    Settings.embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
     workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     db_path = os.path.join(workspace_dir, "chroma_db")
     
