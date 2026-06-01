@@ -185,7 +185,74 @@ def extract_image_for_keyword(keyword: str, retrieved_chunks: list = None) -> st
     # No image found containing the keyword
     return None
 
+def extract_images_for_keyword(keyword: str, retrieved_chunks: list = None, max_images: int = 3) -> list:
+    """
+    Returns up to max_images extracted image paths, in priority order:
+    1. Retrieved pages with keyword match
+    2. Retrieved pages (any image, no keyword required)
+    3. Non-retrieved pages with keyword match
+    """
+    if not keyword or len(keyword.strip()) < 3:
+        return []
+
+    keyword = keyword.lower().strip()
+    workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    assets_dir = os.path.join(workspace_dir, "ui", "assets")
+    os.makedirs(assets_dir, exist_ok=True)
+
+    cache_data = load_or_build_cache(workspace_dir, assets_dir)
+    pages = cache_data.get("pages", [])
+
+    retrieved_pages_order = []
+    retrieved_pages_set = set()
+    if retrieved_chunks:
+        for chunk in retrieved_chunks:
+            meta = chunk.get("metadata", {})
+            pdf_name = meta.get("source_name")
+            page_num_str = meta.get("page_number")
+            if pdf_name and page_num_str:
+                try:
+                    page_num_0 = int(page_num_str) - 1
+                    key = (pdf_name, page_num_0)
+                    if key not in retrieved_pages_set:
+                        retrieved_pages_set.add(key)
+                        retrieved_pages_order.append(key)
+                except ValueError:
+                    continue
+
+    page_map = {(p["pdf"], p["page_num"]): p for p in pages}
+    prioritized_pages = [page_map[k] for k in retrieved_pages_order if k in page_map]
+    other_pages = [p for p in pages if (p["pdf"], p["page_num"]) not in retrieved_pages_set]
+
+    candidates = []
+    used = set()
+    for p in prioritized_pages:
+        if keyword in p["text"].lower():
+            k = (p["pdf"], p["page_num"])
+            if k not in used:
+                candidates.append(p)
+                used.add(k)
+    for p in prioritized_pages:
+        k = (p["pdf"], p["page_num"])
+        if k not in used:
+            candidates.append(p)
+            used.add(k)
+    for p in other_pages:
+        if keyword in p["text"].lower():
+            k = (p["pdf"], p["page_num"])
+            if k not in used:
+                candidates.append(p)
+                used.add(k)
+
+    results = []
+    for i, page_data in enumerate(candidates[:max_images]):
+        save_path = os.path.join(assets_dir, f"extracted_image_{i}.png")
+        if extract_from_page(page_data, save_path, workspace_dir):
+            results.append((save_path, page_data["pdf"], page_data["page_num"] + 1))
+
+    return results
+
+
 if __name__ == "__main__":
-    # Internal test
     res = extract_image_for_keyword("ossidiana")
     print(f"Result: {res}")
