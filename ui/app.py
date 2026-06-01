@@ -246,6 +246,33 @@ def main():
         st.markdown("<div style='margin-top: 2px;'></div>", unsafe_allow_html=True)
         search_button = st.button("Search", use_container_width=True)
 
+    # Upload Section
+    with st.expander("📁 Upload Documents to Corpus"):
+        uploaded_files = st.file_uploader(
+            "Upload PDFs to add to the research corpus",
+            type=["pdf"],
+            accept_multiple_files=True,
+            label_visibility="collapsed"
+        )
+        if uploaded_files:
+            st.write(f"{len(uploaded_files)} file(s) selected")
+            if st.button("Process & Add to Corpus", key="process_upload"):
+                with st.spinner("Processing uploaded documents..."):
+                    try:
+                        from agent.ingest import process_pdf
+                        for uploaded_file in uploaded_files:
+                            # Save to corpus directory
+                            corpus_path = os.path.join(workspace_dir, "data", "corpus", uploaded_file.name)
+                            with open(corpus_path, "wb") as f:
+                                f.write(uploaded_file.getvalue())
+                            st.success(f"Added: {uploaded_file.name}")
+                        # Rebuild vector DB with new documents
+                        from agent.ingest import initialize_vector_db
+                        initialize_vector_db()
+                        st.success("✅ Corpus updated! New documents are now searchable.")
+                    except Exception as e:
+                        st.error(f"Upload failed: {str(e)}")
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     import sys
