@@ -1,106 +1,122 @@
 # Heritage Lens Agent
 > "Most AI systems optimise for answers. This one makes the construction of those answers visible and accountable."
 
-**KXSB AR26 HackXelerator — Mission 4: Ethics, Agency & Societal Impact**
+An **accountable, multimodal RAG agent** for specialised cultural-heritage archives (a
+Mesoamerican / Olmec corpus). Unlike standard RAG that optimises for confident answers, it
+makes the *construction* of those answers visible.
 
----
+> 📐 Full as-built architecture + change log: **[ARCHITECTURE.md](ARCHITECTURE.md)** · setup & run: **[VIDEO_RUN_INSTRUCTIONS.md](VIDEO_RUN_INSTRUCTIONS.md)**
 
-## What is this?
-
-Heritage Lens Agent is a domain-aware research agent for specialised archives where provenance, gaps, and contested interpretations matter. Unlike standard RAG systems that optimise for confident answers, it makes the *construction* of those answers visible.
-
-Every response contains exactly three layers:
+Every response contains three layers:
 
 | Layer | What it does |
 |-------|-------------|
-| **Layer 1 — Answer** | Grounded response using only retrieved sources. General knowledge explicitly labelled `[BACKGROUND — not retrieved]` |
-| **Layer 2 — Source Grounding** | Full attribution: source name, type, institutional origin |
-| **Layer 3 — Epistemic Transparency** | Source bias, knowledge absences, interpretive limits, confidence score — tied to actual retrieved data, not generic disclaimers |
+| **1 — Answer** | Grounded response using only retrieved sources. General knowledge is labelled `[BACKGROUND — not retrieved]` |
+| **2 — Source Grounding** | Full attribution: source name, author, page **or timestamp**, type, institution, modality |
+| **3 — Epistemic Transparency** | Source bias, knowledge absences, interpretive limits, confidence — tied to the actual retrieved metadata, not generic disclaimers |
+
+A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates it if it's generic. When retrieval is weak, the system says so and expands the absences section rather than confabulating. **Failure is a feature.**
 
 ---
 
-## The core differentiator
+## What works today
 
-Standard RAG hides uncertainty. Heritage Lens Agent surfaces it as structured information.
+- **Text RAG** over the PDF corpus → `heritage_lens_text` (384-dim, all-MiniLM-L6-v2), 3-layer answers + Judge loop.
+- **Image search** → `heritage_lens_images` (768-dim, SigLIP 2): PDF page images, uploaded images, and video keyframes; cross-modal text→image query.
+- **Video indexing**, two ways in parallel:
+  - *Visual* — keyframes embedded with SigLIP (`media_type=video_frame`).
+  - *Audio* — transcription via **Parakeet v3** (`onnx-asr`, default) with **faster-whisper fallback**; optional **GLM-4.5V** scene captions + **Tesseract OCR** (Phase B). All timestamped and modality-tagged into `heritage_lens_text`.
+- **Streamlit 3-panel UI** with upload→index, a Video Evidence gallery, and modality badges.
+- **Verified state (2026-06-13):** `heritage_lens_text` = 623 chunks · `heritage_lens_images` = 165 (incl. video keyframes).
 
-When retrieval is weak, the system says so explicitly and expands the absences section rather than confabulating. **Failure is a feature, not a bug.**
-
----
-
-## Corpus
-
-- Ella's degree thesis (Mesoamerican cultural heritage / Ruta de la Obsidiana)
-- Professor's published book (same domain)
-- Both metadata-rich: source type, institutional origin, language, cultural perspective all known
+> **Note on storage:** everything searchable is embedded into Qdrant, but Qdrant stores *vectors + metadata*, not raw files. Image **files** live on disk (`data/cache/images/`); Qdrant holds the vector + an `image_path` pointer. See ARCHITECTURE.md §2.
 
 ---
 
-## Technical Stack
+## Technical stack (as-built)
 
 | Component | Tool |
 |-----------|------|
-| LLM | GPT-4o (OpenAI API) |
-| Embeddings | TBD — Gemini / OpenAI |
-| RAG Pipeline | LangChain or LlamaIndex |
-| Vector DB | Qdrant on Vultr |
-| Agent Orchestration | openclaw-based architecture |
-| Judge Layer | Second GPT-4o call evaluating Layer 3 specificity |
-| UI | Streamlit — 3-panel layout |
-| Infra | Vultr compute credits |
+| Answers + Judge | OpenAI GPT-4o |
+| Text embeddings | `all-MiniLM-L6-v2` (384-dim) |
+| Image embeddings | `google/siglip2-base-patch16-224` (768-dim) |
+| Speech-to-text | **Parakeet v3** (`nemo-parakeet-tdt-0.6b-v3` int8, via `onnx-asr` + Silero VAD) — default; `faster-whisper` fallback (`HL_ASR_BACKEND`) |
+| Frame captioning | **GLM-4.5V** via z.ai (GPT-4o vision fallback) |
+| OCR | Tesseract (`eng+ita+spa`) |
+| RAG pipeline | LlamaIndex |
+| Vector DB | Qdrant (Docker, `localhost:6333`) |
+| Cache | Redis (Docker) |
+| UI | Streamlit (3-panel) |
+| Config | `config/.env` (loaded by systemd in prod / `agent/env_loader.py` on host) |
 
 ---
 
-## Metadata Schema
+## Metadata schema
 
-Each retrieved chunk must carry:
+Text chunk payload (drives Layer 2/3):
 
 ```json
 {
-  "source_name": "",
-  "source_type": "thesis | book | excavation_report | paper | catalogue | oral_account",
-  "institution": "",
-  "date": "",
-  "language_of_origin": "",
-  "cultural_perspective": "western_academic | indigenous | institutional | community"
+  "source_name": "filename.pdf | video.mp4",
+  "source_type": "thesis | book | video | ...",
+  "institution": "", "cultural_perspective": "", "language_of_origin": "", "author": "",
+  "page_number": "12",                 // PDFs
+  "modality": "audio_transcript | visual_caption | ocr_text",   // video-derived
+  "video_id": "", "video_url": "", "start": 12.5, "end": 18.3   // video-derived
 }
 ```
 
-Layer 3 only works if metadata is injected into the retrieved context. Raw text chunks are insufficient.
+Layer 3 only works if this metadata is injected into the retrieved context — raw text chunks are insufficient.
 
 ---
 
-## Minimal Viable Pipeline
+## Pipeline
 
 ```
 User query
-    → Retrieve top 3-5 chunks (with metadata)
-    → GPT-4o generates 3-layer response
-    → Judge evaluates Layer 3 (VALID / WEAK)
-    → If WEAK → regenerate Layer 3
-    → Display in Streamlit 3-panel UI
+  → retrieve top-k chunks (with metadata, balanced across sources)
+  → GPT-4o generates 3-layer response
+  → Judge evaluates Layer 3 (VALID / WEAK) → regenerate if WEAK
+  → Streamlit 3-panel UI  (+ Video Evidence gallery for video-derived results)
 ```
+
+Ingestion entry point: `agent/ingest.py::initialize_vector_db()` (rebuilds text collection, re-indexes `data/corpus/`).
 
 ---
 
-## Repo Structure
+## Repo structure
 
 ```
-heritage-lens-agent/
-├── README.md
-├── prompts/
-│   ├── system_prompt_v1.md
-│   ├── query_wrapper.md
-│   └── judge_prompt.md
-├── data/
-│   ├── corpus/          <- thesis + book chunks
-│   └── metadata/        <- metadata schema + tagged sources
+heritage-lens-multimodal/
+├── ARCHITECTURE.md              <- canonical as-built doc + change log
+├── VIDEO_INDEXING_PLAN.md       <- video feature analysis/plan
+├── VIDEO_RUN_INSTRUCTIONS.md    <- setup & run guide
 ├── agent/
-│   ├── retriever.py
-│   ├── generator.py
-│   └── judge.py
-└── ui/
-    └── app.py           <- Streamlit 3-panel UI
+│   ├── ingest.py  image_extractor.py  image_ingest.py  video_ingest.py
+│   ├── retriever.py  generator.py  judge.py  pipeline.py  env_loader.py
+├── config/        <- settings.yaml, prompts.yaml, .env (gitignored)
+├── data/          <- corpus/ + cache/ (gitignored)
+├── tests/         <- isolated-collection video tests
+├── ui/app.py      <- Streamlit 3-panel UI
+└── docker-compose.yml   <- Qdrant + Redis
 ```
+
+Run/setup details (deps, ingest, env knobs `HL_ASR_BACKEND` / `HL_WHISPER_MODEL` / `HL_FRAME_INTERVAL` / `HL_OCR_LANG`) are in [VIDEO_RUN_INSTRUCTIONS.md](VIDEO_RUN_INSTRUCTIONS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## History
+
+| Date | Milestone |
+|------|-----------|
+| 2026-04 | Origin: 3-layer accountable RAG over the Mesoamerican corpus (KXSB AR26 HackXelerator — Ethics, Agency & Societal Impact). |
+| 2026-06-01 | Corpus restored; document-upload feature; Qdrant healthcheck fixed. |
+| 2026-06-03 | Vector DB migrated ChromaDB → **Qdrant**; SigLIP image indexing + PDF image extraction + frame-only video indexing. |
+| 2026-06-12/13 | **Video Phase A** (audio transcription) + **Phase B** (GLM-4.5V captions + OCR); modality-aware generator/UI; isolated-collection tests; `ARCHITECTURE.md`. |
+| 2026-06-13 | Hardening: shared `env_loader`, deterministic point IDs, multilingual OCR, frame sampling, model singletons; fixed GLM model id (`glm-4.5v` + thinking-disabled) and an image-cache permission bug. |
+| 2026-06-13 | **ASR swapped to Parakeet v3** (multilingual, lighter) behind `HL_ASR_BACKEND`, whisper fallback — resolves the full-ingest OOM. |
+
+Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -113,16 +129,8 @@ heritage-lens-agent/
 | **J Lee** | UI Design — Figma prototype, demo flow |
 | **Nikhilesh** | QA & Docs — query testing, submission |
 
----
-
-## Demo Query
+## Demo query
 
 > "What was the ritual function of obsidian at Olmec ceremonial sites?"
 
-Contingency: a query where corpus coverage is thin, demonstrating failure handling as a feature.
-
----
-
-## Submission Deadline
-
-**April 10, 2026**
+A query where corpus coverage is thin — demonstrating failure handling as a feature.
