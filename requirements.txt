@@ -41,5 +41,11 @@ scikit-image>=0.22.0
 pytesseract>=0.3.10
 pdf2image>=1.16.3
 
+# Video processing
+ffmpeg-python>=0.2.0
+faster-whisper>=1.0.0          # ASR fallback backend
+onnx-asr[cpu,hub]>=0.11.0      # ASR default backend: Parakeet v3 (multilingual, lighter); HL_ASR_BACKEND
+scenedetect>=0.6.2
+
 # Optional: Gradio alternative UI
 # gradio>=4.0.0

@@ -1,3 +1,44 @@
+# ── Secrets / environment (NEVER commit) ───────────────────────────
 .env
+*.env
+config/.env
+config/*.env
+.streamlit/secrets.toml
+*.key
+*.pem
+*.pfx
+credentials*.json
+secrets.*
+
+# ── Python ──────────────────────────────────────────────────────────
 __pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+
+# ── Vector DBs / runtime state (generated, do not track) ────────────
+chroma_db/
+chroma_db_test/
+chroma_db.zip
+qdrant_storage/
+redis_data/
+
+# ── Generated artifacts & caches ────────────────────────────────────
+data/cache/
+data/corpus/
+graphify-out/
+.openclaw/
+*.log
+.cache/
+huggingface/
+
+# ── OS / editor ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 .streamlit/
+.ipynb_checkpoints/

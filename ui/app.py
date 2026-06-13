@@ -2,7 +2,6 @@ import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 import streamlit as st
-from dotenv import load_dotenv
 import sys
 import base64
 import yaml
@@ -19,18 +18,38 @@ if os.path.exists(_settings_path):
 MAX_IMAGES = _settings.get("ui", {}).get("max_display_images", 3)
 UI_TITLE   = _settings.get("ui", {}).get("title", "Heritage Lens Multimodal Agent")
 
-# Rebuild ChromaDB if missing
-db_path     = os.path.join(workspace_dir, "chroma_db")
-sqlite_path = os.path.join(db_path, "chroma.sqlite3")
-if not os.path.exists(sqlite_path):
-    print("DB missing — rebuilding from PDFs...")
+# Rebuild Qdrant index if collections are empty
+def _qdrant_text_count():
+    try:
+        from qdrant_client import QdrantClient
+        return QdrantClient(url="http://localhost:6333").get_collection("heritage_lens_text").points_count
+    except Exception:
+        return 0
+
+def _qdrant_video_chunk_count():
+    try:
+        from qdrant_client import QdrantClient
+        from qdrant_client.http.models import Filter, FieldCondition, MatchAny
+        client = QdrantClient(url="http://localhost:6333")
+        return client.count(
+            collection_name="heritage_lens_text",
+            count_filter=Filter(
+                must=[FieldCondition(key="modality", match=MatchAny(any=["audio_transcript", "visual_caption", "ocr_text"]))]
+            ),
+        ).count
+    except Exception:
+        return 0
+
+if _qdrant_text_count() == 0:
+    print("Qdrant text collection empty — rebuilding from PDFs...")
     from agent.ingest import initialize_vector_db
     try:
         initialize_vector_db()
     except Exception as e:
         print(f"Ingestion failed: {e}")
 
-load_dotenv(override=True)
+from agent.env_loader import load_env
+load_env()
 
 
 def img_to_b64(path: str) -> str:
@@ -98,24 +117,23 @@ def main():
         }
 
         .panel-blue {
-            background: linear-gradient(135deg, rgba(8,47,73,0.85) 0%, rgba(12,74,110,0.85) 100%);
-            backdrop-filter: blur(16px);
+            background: linear-gradient(135deg, #7DD3FC 0%, #38BDF8 100%);
             padding: 32px;
             border-radius: 20px;
             min-height: 550px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 25px -5px rgba(14,165,233,0.2), inset 0 1px 1px 0 rgba(255,255,255,0.1);
-            border: 1px solid rgba(14,165,233,0.3);
+            box-shadow: 0 10px 25px -5px rgba(14,165,233,0.3), inset 0 2px 4px 0 rgba(255,255,255,0.6);
+            border: 1px solid #BAE6FD;
             transition: all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
             animation: slideUpFade 0.6s ease-out forwards;
             opacity: 0;
-            color: #E2E8F0;
+            color: #082F49;
         }
         .panel-blue:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgba(14,165,233,0.4), inset 0 1px 1px 0 rgba(255,255,255,0.2);
-            filter: brightness(1.1);
+            box-shadow: 0 20px 25px -5px rgba(14,165,233,0.5), inset 0 2px 4px 0 rgba(255,255,255,0.8);
+            filter: brightness(1.05);
         }
 
         .panel-content {
@@ -201,8 +219,8 @@ def main():
             letter-spacing: 0.1em;
         }
         .panel-blue h3 {
-            border-bottom: 2px solid rgba(14,165,233,0.3);
-            color: #E0F2FE;
+            border-bottom: 2px solid rgba(8,47,73,0.15);
+            color: #0C4A6E;
         }
 
         .layer-label {
@@ -214,7 +232,7 @@ def main():
             letter-spacing: 0.05em;
             font-weight: 700;
         }
-        .panel-blue .layer-label { color: #38BDF8; }
+        .panel-blue .layer-label { color: #0369A1; }
 
         div[data-testid="stTextInput"] input {
             border-radius: 16px !important;
@@ -250,18 +268,25 @@ def main():
     """, unsafe_allow_html=True)
 
     # ── Sidebar ──────────────────────────────────────────────────────────────
+    ACCEPTED_TYPES = [
+        "pdf",
+        "png", "jpg", "jpeg", "tiff", "bmp", "webp",
+        "mp4", "mov", "avi", "mkv", "webm",
+    ]
+
     with st.sidebar:
-        st.markdown("### 📁 Add Documents")
+        st.markdown("### 📁 Add to Corpus")
+        st.caption("PDF · Images · Video")
         uploaded_files = st.file_uploader(
-            "Upload PDFs to the research corpus",
-            type=["pdf"],
+            "Upload files to the research corpus",
+            type=ACCEPTED_TYPES,
             accept_multiple_files=True,
             label_visibility="collapsed",
         )
         if uploaded_files:
             st.write(f"{len(uploaded_files)} file(s) ready")
             if st.button("Process & Index", use_container_width=True):
-                with st.spinner("Indexing..."):
+                with st.spinner("Indexing — this may take a minute for videos…"):
                     try:
                         corpus_dir = os.path.join(workspace_dir, "data", "corpus")
                         os.makedirs(corpus_dir, exist_ok=True)
@@ -278,19 +303,20 @@ def main():
         st.markdown("---")
         st.markdown("### 📊 Corpus Status")
 
-        # Count indexed PDFs
-        pdf_count = len(list(__import__("pathlib").Path(workspace_dir).glob("*.pdf")))
         corpus_dir = os.path.join(workspace_dir, "data", "corpus")
         corpus_count = len(list(__import__("pathlib").Path(corpus_dir).glob("*.pdf"))) if os.path.isdir(corpus_dir) else 0
-        st.caption(f"📄 Root PDFs: **{pdf_count}**")
         st.caption(f"📂 Corpus PDFs: **{corpus_count}**")
-
-        db_size = os.path.getsize(sqlite_path) / (1024 * 1024) if os.path.exists(sqlite_path) else 0
-        zip_path = os.path.join(workspace_dir, "chroma_db.zip")
-        zip_size = os.path.getsize(zip_path) / (1024 * 1024) if os.path.exists(zip_path) else 0
-        st.caption(f"💾 Vector DB: **{db_size:.1f} MB**")
-        if zip_size:
-            st.caption(f"🗜️ DB ZIP: **{zip_size:.1f} MB**")
+        text_pts = _qdrant_text_count()
+        st.caption(f"📝 Text chunks indexed: **{text_pts}**")
+        try:
+            from qdrant_client import QdrantClient
+            img_pts = QdrantClient(url="http://localhost:6333").get_collection("heritage_lens_images").points_count
+            st.caption(f"🖼️ Images indexed: **{img_pts}**")
+        except Exception:
+            pass
+        video_pts = _qdrant_video_chunk_count()
+        if video_pts > 0:
+            st.caption(f"🎬 Video chunks indexed: **{video_pts}**")
 
         st.markdown("---")
         st.caption("Heritage Lens — Accountable AI for Specialised Research")
@@ -331,7 +357,9 @@ def main():
     ans_text          = "[Text block — grounded answer based on retrieved sources]"
     src_text          = "Submit a query to parse data sources…"
     transparency_text = "Submit a query to evaluate epistemic bounds…"
-    image_results     = []   # list of (path, pdf_name, page_num)
+    # list of (image_path, source_name, page_number)
+    image_results     = []
+    video_chunks      = []
 
     # ── Run pipeline ─────────────────────────────────────────────────────────
     if search_button and query:
@@ -389,15 +417,70 @@ def main():
 
                 transparency_text = rendered_html or trans_raw.replace("\n", "<br>")
 
-                # ── Multi-image extraction ───────────────────────────────────
-                keyword = result.get("layer_4_image_keyword")
-                retrieved_chunks = result.get("retrieved_chunks", [])
-                if keyword:
-                    st.toast(f"Scanning corpus for visual data matching '{keyword}'…")
-                    image_results = extract_images_for_keyword(keyword, retrieved_chunks, MAX_IMAGES)
+                # ── Video Evidence (timestamped chunks) ─────────────────────
+                video_chunks = []
+                for ch in result.get("retrieved_chunks", []):
+                    meta = ch.get("metadata", {})
+                    if meta.get("modality") in ("audio_transcript", "visual_caption", "ocr_text"):
+                        video_chunks.append(ch)
+
+                # ── Image retrieval (Qdrant semantic search, keyword fallback) ──
+                qdrant_images = result.get("retrieved_images", [])
+                if qdrant_images:
+                    image_results = [
+                        (hit["image_path"], hit["metadata"].get("source_name", ""), hit["metadata"].get("page_number", ""))
+                        for hit in qdrant_images
+                        if os.path.exists(hit["image_path"])
+                    ]
+                if not image_results:
+                    keyword = result.get("layer_4_image_keyword")
+                    retrieved_chunks = result.get("retrieved_chunks", [])
+                    if keyword:
+                        st.toast(f"Scanning corpus for visual data matching '{keyword}'…")
+                        image_results = extract_images_for_keyword(keyword, retrieved_chunks, MAX_IMAGES)
 
             except Exception as e:
                 ans_text = f"Internal Error: {str(e)}"
+
+    # ── Video Evidence gallery ───────────────────────────────────────────────
+    if video_chunks:
+        st.markdown('<p class="gallery-label">🎬 Video Evidence</p>', unsafe_allow_html=True)
+        vid_cols = st.columns(min(len(video_chunks), 3))
+        for col, ch in zip(vid_cols, video_chunks[:3]):
+            meta = ch.get("metadata", {})
+            start = meta.get("start", 0)
+            end = meta.get("end", 0)
+            modality = meta.get("modality", "video")
+            video_url = meta.get("video_url", "")
+            source_name = meta.get("source_name", "")
+            badge_color = {
+                "audio_transcript": "#0EA5E9",
+                "visual_caption": "#8B5CF6",
+                "ocr_text": "#F59E0B",
+            }.get(modality, "#64748B")
+            seek_link = ""
+            if video_url:
+                # Generate a deep-link with timestamp if possible
+                # For local files, we can't deep-link; for HTTP URLs, we can append #t= start
+                if video_url.startswith("http"):
+                    seek_link = f'<br><a href="{video_url}#t={int(start)}" target="_blank" style="color:#38BDF8;font-size:0.75rem;font-weight:700;">⏯ Seek to {start}s</a>'
+            snippet = ch.get("text", "")[:120].replace("\n", " ")
+            if len(ch.get("text", "")) > 120:
+                snippet += "…"
+            col.markdown(
+                f'<div class="image-gallery-card">'
+                f'<div style="font-size:0.75rem;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px;">'
+                f'{source_name}</div>'
+                f'<div style="font-size:0.85rem;color:#E2E8F0;line-height:1.4;margin-bottom:8px;">{snippet}</div>'
+                f'<div style="display:flex;gap:6px;align-items:center;">'
+                f'<span style="background:{badge_color};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;text-transform:uppercase;">{modality}</span>'
+                f'<span style="color:#64748B;font-size:0.72rem;">⏱ {start}s – {end}s</span>'
+                f'</div>'
+                f'{seek_link}'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Image gallery (shown only after a query returns images) ──────────────
     if image_results:

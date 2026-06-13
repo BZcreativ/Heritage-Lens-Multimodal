@@ -1,18 +1,22 @@
 import os
+import sys
 from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv(override=True)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from agent.env_loader import load_env
+
+load_env()
 
 try:
-    import chromadb
+    from qdrant_client import QdrantClient
+    from qdrant_client.http.models import VectorParams, Distance
     from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Document
-    from llama_index.vector_stores.chroma import ChromaVectorStore
+    from llama_index.vector_stores.qdrant import QdrantVectorStore
     from llama_index.core.node_parser import SentenceSplitter
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.core import Settings
 except ImportError:
     print("WARNING: Missing required dependencies. To run this script, please install:")
-    print("pip install llama-index llama-index-vector-stores-chroma chromadb pypdf llama-index-embeddings-huggingface")
+    print("pip install llama-index llama-index-vector-stores-qdrant qdrant-client pypdf llama-index-embeddings-huggingface")
 
 try:
     Settings.embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
@@ -88,23 +92,24 @@ def load_documents_with_metadata(data_dir: str):
     return documents
 
 def initialize_vector_db():
-    print("=== INITIALIZING CHROMA VECTOR DATABASE ===")
-    
-    # Store the db locally in the workspace
-    # Resolve workspace dir dynamically from script path
+    print("=== INITIALIZING QDRANT VECTOR DATABASE ===")
+
     workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    db_path = os.path.join(workspace_dir, "chroma_db")
-    
-    print(f"Database persist location: {db_path}")
-    
-    db = chromadb.PersistentClient(path=db_path)
-    chroma_collection = db.get_or_create_collection("heritage_lens")
-    
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+    corpus_dir = os.path.join(workspace_dir, "data", "corpus")
+
+    client = QdrantClient(url="http://localhost:6333")
+    client.delete_collection("heritage_lens_text")
+    client.create_collection(
+        "heritage_lens_text",
+        vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+    )
+    print("Qdrant collection 'heritage_lens_text' recreated.")
+
+    vector_store = QdrantVectorStore(client=client, collection_name="heritage_lens_text")
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    
-    print(f"Scanning for PDF corpora in workspace: {workspace_dir}")
-    documents = load_documents_with_metadata(workspace_dir)
+
+    print(f"Scanning for PDF corpora in: {corpus_dir}")
+    documents = load_documents_with_metadata(corpus_dir)
     
     if not documents:
         print("No documents found. Nothing to ingest.")
@@ -119,16 +124,29 @@ def initialize_vector_db():
     
     print(f"Created {len(nodes)} discrete chunks. Generating embeddings...")
     
-    # Generates text-embedding-3-large embeddings & stores them into Chroma via StorageContext
     index = VectorStoreIndex(
         nodes, 
         storage_context=storage_context,
         show_progress=True
     )
     
-    print(f"=== SUCCESS! ===")
-    print(f"Processed and ingested {len(nodes)} chunks into the VectorDB.")
-    print("Each chunk is stamped with its target {source_type, institution, cultural_perspective, language_of_origin} JSON mapping.")
+    print(f"=== TEXT INDEXING COMPLETE: {len(nodes)} chunks ingested. ===")
+
+    from agent.video_ingest import index_videos_in_corpus
+    from agent.image_ingest import (
+        index_images_from_corpus, index_standalone_images,
+        index_video_frames, VIDEO_EXTS,
+    )
+    index_images_from_corpus(corpus_dir, client)
+    index_standalone_images(corpus_dir, client)
+    for video_path in Path(corpus_dir).iterdir():
+        if video_path.suffix.lower() in VIDEO_EXTS:
+            index_video_frames(str(video_path), client)
+
+    # ── Video text indexing (audio transcripts + visual captions/OCR) ──
+    print("=== INDEXING VIDEO TEXT DERIVATIVES ===")
+    index_videos_in_corpus(corpus_dir, client, index_audio=True, index_visual=False)
+    print("=== VIDEO TEXT INDEXING COMPLETE ===")
 
 if __name__ == "__main__":
     initialize_vector_db()

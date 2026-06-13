@@ -2,9 +2,9 @@ import os
 import json
 from collections import Counter
 from openai import OpenAI
-from dotenv import load_dotenv
+from agent.env_loader import load_env
 
-load_dotenv()
+load_env()
 # client initialization moved inside generate_response to prevent early failure
 
 def analyze_metadata(chunks: list[dict]) -> str:
@@ -15,12 +15,14 @@ def analyze_metadata(chunks: list[dict]) -> str:
     source_types = Counter()
     institutions = Counter()
     perspectives = Counter()
+    modalities = Counter()
     
     for chunk in chunks:
         meta = chunk.get("metadata", {})
         source_types[meta.get("source_type", "unknown")] += 1
         institutions[meta.get("institution", "unknown")] += 1
         perspectives[meta.get("cultural_perspective", "unknown")] += 1
+        modalities[meta.get("modality", "text")] += 1
         
     total = len(chunks)
     
@@ -38,6 +40,10 @@ def analyze_metadata(chunks: list[dict]) -> str:
     analysis += "\nCultural Perspectives Count:\n"
     for persp, count in perspectives.items():
         analysis += f"- {persp}: {count}/{total}\n"
+
+    analysis += "\nModality Count:\n"
+    for mod, count in modalities.items():
+        analysis += f"- {mod}: {count}/{total}\n"
         
     return analysis
 
@@ -71,7 +77,14 @@ def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedba
         context_str += f"[Source {idx}]\n"
         context_str += f"Name: {source_name}\n"
         context_str += f"Author: {author}\n"
-        context_str += f"Page: {meta.get('page_number', 'Unknown')}\n"
+        
+        # Video-derived chunks carry timestamp instead of page
+        if meta.get("start") is not None and meta.get("end") is not None:
+            context_str += f"Timestamp: {meta['start']}s – {meta['end']}s\n"
+            context_str += f"Modality: {meta.get('modality', 'unknown')}\n"
+        else:
+            context_str += f"Page: {meta.get('page_number', 'Unknown')}\n"
+            
         context_str += f"Type: {meta.get('source_type', 'Unknown')}\n"
         context_str += f"Institution: {meta.get('institution', 'Unknown')}\n"
         context_str += f"Perspective: {meta.get('cultural_perspective', 'Unknown')}\n"
@@ -84,7 +97,7 @@ Your goal is to answer the user's research query using the provided retrieved so
 
 You MUST output a valid JSON object with EXACTLY four keys:
 - "layer_1_answer": A grounded answer synthesizing ALL relevant information from the retrieved context. Provide the best possible answer based on whatever fragments you find. Do NOT refuse to answer. You can use general knowledge to map concepts, but it MUST be explicitly labelled as [BACKGROUND — not retrieved].
-- "layer_2_sources": A string listing all formatted sources used (Name, Author, Page, Type, Institution). You MUST securely cite the specific 'Page' provided in the context below! Only cite sources present in the retrieved chunks. Format nicely with line breaks using \\n for UI rendering.
+- "layer_2_sources": A string listing all formatted sources used (Name, Author, Page/Time, Type, Institution, Modality). You MUST securely cite the specific 'Page' or 'Timestamp' provided in the context below! Only cite sources present in the retrieved chunks. Format nicely with line breaks using \\n for UI rendering.
 - "layer_3_transparency": An epistemic transparency report. It MUST be formatted as a string containing exactly these 4 section titles with emojis, each followed by your specific analysis on a new line (DO NOT use markdown bolding for the titles):
 ⚠️ SOURCE BIAS
 [Your specific analysis]
@@ -100,7 +113,13 @@ You MUST output a valid JSON object with EXACTLY four keys:
 - "layer_4_image_keyword": A key 1-2 word noun phrase (e.g. "ossidiana" or "olmeca") drawn directly from the topic of the answer. IMPORTANT: Since the original PDFs are written in Italian or Spanish, this keyword MUST be written in the original language of the retrieved sources (e.g. Italian or Spanish, NOT translated to the user's query language) so that it can be found using an exact text search in the PDF.
 
 For Layer 3, critically analyse the evidence explicitly using the SYSTEM METADATA AGGREGATION below. 
-You must identify 'Dominant Patterns' by interpreting the counts of source_types and institutions.
+You must identify 'Dominant Patterns' by interpreting the counts of source_types, institutions, and modalities.
+
+When video-derived chunks are present (modality = audio_transcript, visual_caption, or ocr_text), treat them as provenance signals:
+- audio_transcript = "narrated, not visually confirmed"
+- visual_caption = "visually described, not narrated"
+- ocr_text = "on-screen text, not narrated"
+Highlight conflicts or gaps between these modalities in the SOURCE BIAS and INTERPRETIVE LIMITS sections.
 
 SYSTEM METADATA AGGREGATION:
 {metadata_analysis}

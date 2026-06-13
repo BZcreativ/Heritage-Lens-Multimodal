@@ -1,8 +1,8 @@
 import json
 from openai import OpenAI
-from dotenv import load_dotenv
+from agent.env_loader import load_env
 
-load_dotenv()
+load_env()
 # client initialization moved inside evaluate_layer_3 to prevent early failure
 
 def evaluate_layer_3(layer_3_text: str) -> tuple[bool, str]:

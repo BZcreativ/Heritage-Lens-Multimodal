@@ -9,9 +9,9 @@ except ImportError:
 def load_or_build_cache(workspace_dir: str, assets_dir: str) -> dict:
     cache_path = os.path.join(assets_dir, "pdf_page_cache.json")
     
-    # Find all PDFs in workspace
+    # Find all PDFs in corpus directory
     pdf_files = {}
-    for filepath in Path(workspace_dir).glob("*.pdf"):
+    for filepath in Path(os.path.join(workspace_dir, "data", "corpus")).glob("*.pdf"):
         stat = filepath.stat()
         pdf_files[filepath.name] = {
             "size": stat.st_size,
@@ -90,7 +90,7 @@ def load_or_build_cache(workspace_dir: str, assets_dir: str) -> dict:
 def extract_from_page(page_data: dict, save_path: str, workspace_dir: str) -> bool:
     pdf_name = page_data["pdf"]
     page_num = page_data["page_num"]
-    filepath = os.path.join(workspace_dir, pdf_name)
+    filepath = os.path.join(workspace_dir, "data", "corpus", pdf_name)
     try:
         reader = PdfReader(filepath)
         page = reader.pages[page_num]
