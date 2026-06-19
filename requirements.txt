@@ -49,3 +49,8 @@ scenedetect>=0.6.2
 
 # Optional: Gradio alternative UI
 # gradio>=4.0.0
+
+# Web API layer
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sse-starlette>=2.1

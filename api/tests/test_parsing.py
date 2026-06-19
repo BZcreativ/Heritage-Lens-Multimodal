@@ -1,0 +1,75 @@
+"""Unit tests for the pure parsing helpers — no DB / pipeline needed.
+
+Run:  pytest api/tests/test_parsing.py
+"""
+from api import parsing
+
+
+SAMPLE_L3 = """⚠️ SOURCE BIAS
+3 of 4 sources are Western academic papers from Italian university presses.
+
+📄 ABSENCES
+No indigenous oral traditions or local community knowledge are present.
+
+🕵️ INTERPRETIVE LIMITS
+The term 'ritual' reflects an academic classification, not an emic category.
+
+⚠️ CONFIDENCE
+Moderate. Iconographic support is strong but structural claims are weak.
+"""
+
+
+def test_split_layer3_four_sections():
+    s = parsing.split_layer3(SAMPLE_L3)
+    assert "Western academic" in s["⚠️ SOURCE BIAS"]
+    assert "indigenous oral traditions" in s["📄 ABSENCES"]
+    assert "academic classification" in s["🕵️ INTERPRETIVE LIMITS"]
+    assert "Moderate" in s["⚠️ CONFIDENCE"]
+
+
+def test_split_layer3_tolerates_markdown():
+    raw = "**⚠️ SOURCE BIAS**\nbiased.\n## 📄 ABSENCES\ngaps."
+    s = parsing.split_layer3(raw)
+    assert s["⚠️ SOURCE BIAS"] == "biased."
+    assert s["📄 ABSENCES"] == "gaps."
+
+
+def test_confidence_heuristic():
+    assert parsing.confidence_from_text("Moderate. mixed.").level == "moderate"
+    assert parsing.confidence_from_text("High confidence, robust.").level == "high"
+    assert parsing.confidence_from_text("Very low; insufficient data.").level == "low"
+    assert parsing.confidence_from_text("Moderate.").segments == 3
+
+
+def test_build_sources_dedup_and_type():
+    chunks = [
+        {"text": "a", "score": 0.9, "metadata": {
+            "source_name": "Doc A.pdf", "author": "X", "page_number": "12",
+            "source_type": "book", "institution": "Inst"}},
+        {"text": "b", "score": 0.5, "metadata": {
+            "source_name": "Doc A.pdf", "author": "X", "page_number": "13"}},
+        {"text": "c", "score": 0.8, "metadata": {
+            "source_name": "Lecture.mp4", "modality": "audio_transcript",
+            "start": 120, "end": 249}},
+    ]
+    sources = parsing.build_sources(chunks)
+    assert len(sources) == 2                         # Doc A deduped
+    doc_a = next(s for s in sources if s.title == "Doc A.pdf")
+    assert doc_a.type == "pdf"
+    assert doc_a.meta["Chunks used"] == "2"
+    lecture = next(s for s in sources if s.title == "Lecture.mp4")
+    assert lecture.type == "vid"
+    assert "120s – 249s" in lecture.subtitle
+
+
+def test_build_video_chunks_filters_modality():
+    chunks = [
+        {"text": "spoken words", "metadata": {
+            "modality": "audio_transcript", "start": 1, "end": 5,
+            "source_name": "v.mp4", "video_url": "http://x/v.mp4"}},
+        {"text": "plain pdf text", "metadata": {"source_name": "d.pdf", "page_number": "1"}},
+    ]
+    vids = parsing.build_video_chunks(chunks)
+    assert len(vids) == 1
+    assert vids[0].video_url == "http://x/v.mp4"     # http → seekable
+    assert vids[0].timestamp == "1s – 5s"
