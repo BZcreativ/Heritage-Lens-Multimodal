@@ -27,6 +27,7 @@ A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates 
   - *Visual* — keyframes embedded with SigLIP (`media_type=video_frame`).
   - *Audio* — transcription via **Parakeet v3** (`onnx-asr`, default) with **faster-whisper fallback**; optional **GLM-4.5V** scene captions + **Tesseract OCR** (Phase B). All timestamped and modality-tagged into `heritage_lens_text`.
 - **Streamlit 3-panel UI** with upload→index, a Video Evidence gallery, and modality badges.
+- **Web UI (new, branch `feature/web-ui`)** — a **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design. Every nav item (Ask / Sources / Uploads / Sessions) binds to a real endpoint; three-panel results, galleries + lightbox, dark mode, reading-comfort. Served by one host service (`heritage-api`, `127.0.0.1:8000`) alongside Streamlit (:8501). See [ARCHITECTURE.md §5b](ARCHITECTURE.md).
 - **Verified state (2026-06-13):** `heritage_lens_text` = 623 chunks · `heritage_lens_images` = 165 (incl. video keyframes).
 
 > **Note on storage:** everything searchable is embedded into Qdrant, but Qdrant stores *vectors + metadata*, not raw files. Image **files** live on disk (`data/cache/images/`); Qdrant holds the vector + an `image_path` pointer. See ARCHITECTURE.md §2.
@@ -46,7 +47,8 @@ A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates 
 | RAG pipeline | LlamaIndex |
 | Vector DB | Qdrant (Docker, `localhost:6333`) |
 | Cache | Redis (Docker) |
-| UI | Streamlit (3-panel) |
+| UI | Streamlit (3-panel) · **Web UI:** FastAPI (`api/`) + React/Vite/TS/Tailwind 4 (`ui/frontend/`) |
+| Web serving | `heritage-api.service` (uvicorn serves API + built SPA on `127.0.0.1:8000`) |
 | Config | `config/.env` (loaded by systemd in prod / `agent/env_loader.py` on host) |
 
 ---
@@ -94,10 +96,14 @@ heritage-lens-multimodal/
 ├── agent/
 │   ├── ingest.py  image_extractor.py  image_ingest.py  video_ingest.py
 │   ├── retriever.py  generator.py  judge.py  pipeline.py  env_loader.py
+├── api/           <- FastAPI layer (main, routes, models, parsing, corpus) + tests
 ├── config/        <- settings.yaml, prompts.yaml, .env (gitignored)
 ├── data/          <- corpus/ + cache/ (gitignored)
+├── docs/design/   <- web UI design spec + approved prototype
 ├── tests/         <- isolated-collection video tests
-├── ui/app.py      <- Streamlit 3-panel UI
+├── ui/
+│   ├── app.py     <- Streamlit 3-panel UI (:8501)
+│   └── frontend/  <- React/Vite/TS/Tailwind 4 SPA (served by heritage-api :8000)
 └── docker-compose.yml   <- Qdrant + Redis
 ```
 
@@ -115,6 +121,7 @@ Run/setup details (deps, ingest, env knobs `HL_ASR_BACKEND` / `HL_WHISPER_MODEL`
 | 2026-06-12/13 | **Video Phase A** (audio transcription) + **Phase B** (GLM-4.5V captions + OCR); modality-aware generator/UI; isolated-collection tests; `ARCHITECTURE.md`. |
 | 2026-06-13 | Hardening: shared `env_loader`, deterministic point IDs, multilingual OCR, frame sampling, model singletons; fixed GLM model id (`glm-4.5v` + thinking-disabled) and an image-cache permission bug. |
 | 2026-06-13 | **ASR swapped to Parakeet v3** (multilingual, lighter) behind `HL_ASR_BACKEND`, whisper fallback — resolves the full-ingest OOM. |
+| 2026-06-19 | **Web UI rebuild** (branch `feature/web-ui`): **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design; new `/api/sources` + `/api/upload` endpoints so every nav item is backed; single-service deploy (`heritage-api`, uvicorn serves API + SPA on `127.0.0.1:8000`). Node 18→20. Streamlit + `agent/*`/`config/*` untouched. |
 
 Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 

@@ -101,6 +101,15 @@ Phase B is disabled in the corpus rebuild by default (`index_visual=False` in `i
 - Sidebar: upload PDFs/images/videos → "Process & Index" → full rebuild. Shows text + video chunk counts.
 - Results: PDF image gallery + a **Video Evidence gallery** with modality badges (`audio_transcript`/`visual_caption`/`ocr_text`), timestamps, and seek links (for `http` `video_url`s).
 
+### 5b. Web UI (`api/` + `ui/frontend/`, 2026-06-19 — branch `feature/web-ui`)
+
+A modern web app that **replaces** Streamlit for day-to-day use (Streamlit stays intact on :8501):
+
+- **`api/`** — a thin **FastAPI** layer that *imports* the existing pipeline (no reimplementation). Endpoints: `GET /api/status`, `POST /api/search {query,mode}`, `GET /api/sources`, `POST /api/upload` (multipart → `data/corpus/`), `POST /api/ingest` (SSE rebuild), `GET /api/images?path=` (traversal-guarded). `api/parsing.py` holds pure string→struct helpers (unit-tested, no DB). The `/api/search` JSON exactly matches `api/models.SearchResult`; if it ever diverges, fix it in `api/parsing.py` — **never** in `agent/*`.
+- **`ui/frontend/`** — a **React + Vite + TypeScript + Tailwind 4** SPA recreating the approved "Sidebar Classic" design (`docs/design/`). Nav (Ask / Sources / Uploads / Sessions) each bind to a real endpoint; three-panel results (Answer with `[BACKGROUND]` amber tags, Sources, Epistemic rail), video/image galleries + lightbox, dark mode, and a Reading-Comfort drawer (typeface applies app-wide; spacing/width/cream scoped to the answer). State via React context only.
+- **Deploy:** `heritage-api.service` (systemd, host, mirrors `heritage-streamlit.service`) runs `uvicorn api.main:app` and **serves the built SPA + the API from one process** (same-origin, no nginx). Bound **`127.0.0.1:8000`** deliberately — `/api/upload` + `/api/ingest` are unauthenticated; do **not** bind `0.0.0.0` without adding auth. `api/main.py` mounts `ui/frontend/dist/` at `/` when present; rebuild the SPA (`npm run build` as `heritage`) after frontend changes. Requires **Node 20 LTS**.
+- **Answer Mode** select is accepted + echoed in `meta` but a **no-op upstream** (pipeline is `run_pipeline(query)` only).
+
 ---
 
 ## 6. Models & external services
@@ -180,6 +189,7 @@ So the uploaded `monument.mp4` is indexed **visually** (5 keyframes, searchable 
 | 2026-06-13 | Knowledge graph updated to reflect the video pipeline (`graphify-out/`). |
 | 2026-06-13 | Re-ingested as `heritage` after the permission fix: `heritage_lens_text`=623, `heritage_lens_images`=280 (incl. 5 `monument.mp4` keyframes — permission fix confirmed). Full ingest **OOM-killed** when whisper `large-v3` loaded; monument audio added separately with `HL_WHISPER_MODEL=base` (no speech → 0 chunks). |
 | 2026-06-13 | **ASR swapped to Parakeet v3** (`nemo-parakeet-tdt-0.6b-v3` int8 via `onnx-asr` + Silero VAD) behind `HL_ASR_BACKEND` (default `parakeet`, whisper auto-fallback). Multilingual (it/es), ~half the RAM → resolves the full-ingest OOM. Verified end-to-end on both backends; Parakeet transcribed the test phrase more accurately than whisper. Added `onnx-asr[cpu,hub]` to requirements. |
+| 2026-06-19 | **Web UI rebuild** (branch `feature/web-ui`): new **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design (`docs/design/`). Added `GET /api/sources` and `POST /api/upload` so every nav item is backed by a real endpoint; `SearchRequest.mode` passthrough (no-op). Single-service deploy via `heritage-api.service` (uvicorn serves API + built SPA on `127.0.0.1:8000`, no nginx). Node bumped 18→20 LTS. Streamlit (`ui/app.py`) left intact on :8501; `agent/*` and `config/*` untouched. Verified live against the corpus (Playwright, 0 console errors). See §5b. |
 
 ---
 
