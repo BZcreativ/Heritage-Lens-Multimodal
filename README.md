@@ -131,10 +131,8 @@ Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Person | Role |
 |--------|------|
-| **Ella** | Project Lead — concept, epistemic layer, pitch |
+| **[Lara](https://github.com/AidanandMe)** | Project Lead & Project Owner |
 | **buzman** | Lead Engineer — pipeline, infra, orchestration |
-| **J Lee** | UI Design — Figma prototype, demo flow |
-| **Nikhilesh** | QA & Docs — query testing, submission |
 
 ## Demo query
 
