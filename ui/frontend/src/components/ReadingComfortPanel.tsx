@@ -32,7 +32,7 @@ export function ReadingComfortPanel() {
           </div>
           <div>
             <h2>Reading Comfort</h2>
-            <div className="rc-sub">Applies to the answer text</div>
+            <div className="rc-sub">Typeface applies app-wide · spacing to the answer</div>
           </div>
           <button className="x" onClick={() => setReadingOpen(false)} aria-label="Close">
             <X />

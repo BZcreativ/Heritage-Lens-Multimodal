@@ -1,4 +1,4 @@
-import { createContext, useContext, type CSSProperties, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { usePersistedState } from '../lib/usePersistedState'
 
 export type ReadingFont = 'inter' | 'atkinson' | 'opendyslexic'
@@ -42,6 +42,14 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
 
   const set: ReadingCtx['set'] = (key, value) => setReading((prev) => ({ ...prev, [key]: value }))
   const reset = () => setReading(READING_DEFAULTS)
+
+  // Typeface is a global accessibility preference — drive the whole app's font
+  // (body reads var(--app-font)). The spacing / width / cream / ragged controls
+  // stay scoped to the answer via docStyle below (applying them app-wide would
+  // break the dashboard layout).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--app-font', FONT_STACK[reading.font])
+  }, [reading.font])
 
   const docStyle = {
     '--rc-font': FONT_STACK[reading.font],
