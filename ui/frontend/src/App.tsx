@@ -1,23 +1,72 @@
-// Placeholder shell — replaced in the next build step with the real layout
-// (Sidebar / TopBar / views). For now it proves Tailwind 4 + design tokens load.
-function App() {
+import { ThemeProvider } from './context/ThemeContext'
+import { ReadingProvider } from './context/ReadingContext'
+import { StatusProvider } from './context/StatusContext'
+import { NavProvider, useNav } from './context/NavContext'
+import { SearchProvider } from './context/SearchContext'
+import { UIProvider } from './context/UIContext'
+
+import { Sidebar } from './components/Sidebar'
+import { TopBar } from './components/TopBar'
+import { Footer } from './components/Footer'
+import { RightRail } from './components/RightRail'
+import { Lightbox } from './components/Lightbox'
+import { ReadingComfortPanel } from './components/ReadingComfortPanel'
+import { Toast } from './components/Toast'
+
+import { AskView } from './views/AskView'
+import { SourcesView } from './views/SourcesView'
+import { UploadsView } from './views/UploadsView'
+import { SessionsView } from './views/SessionsView'
+
+function CurrentView() {
+  const { view } = useNav()
+  switch (view) {
+    case 'sources':
+      return <SourcesView />
+    case 'uploads':
+      return <UploadsView />
+    case 'sessions':
+      return <SessionsView />
+    default:
+      return <AskView />
+  }
+}
+
+function Shell() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg text-text">
-      <div
-        className="rounded-r border border-border bg-surface p-8 text-center"
-        style={{ boxShadow: 'var(--shadow)' }}
-      >
-        <div
-          className="mx-auto mb-4 h-10 w-10 rounded-lg"
-          style={{ background: 'linear-gradient(135deg, var(--answer), var(--sources))' }}
-        />
-        <h1 className="text-lg font-semibold tracking-tight">Heritage Lens</h1>
-        <p className="mt-1 text-sm text-soft">
-          Frontend scaffold ready — Tailwind 4 + design tokens loaded.
-        </p>
+    <>
+      <div className="app">
+        <Sidebar />
+        <main className="main">
+          <TopBar />
+          <div className="content">
+            <CurrentView />
+          </div>
+        </main>
+        <RightRail />
+        <Footer />
       </div>
-    </div>
+      <ReadingComfortPanel />
+      <Lightbox />
+      <Toast />
+    </>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ReadingProvider>
+        <StatusProvider>
+          <UIProvider>
+            <NavProvider>
+              <SearchProvider>
+                <Shell />
+              </SearchProvider>
+            </NavProvider>
+          </UIProvider>
+        </StatusProvider>
+      </ReadingProvider>
+    </ThemeProvider>
+  )
+}
