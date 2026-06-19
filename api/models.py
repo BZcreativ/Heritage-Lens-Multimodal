@@ -57,6 +57,7 @@ class SearchMeta(BaseModel):
     image_count: int = 0
     elapsed_seconds: float = 0.0
     image_keyword: Optional[str] = None
+    mode: Optional[str] = None        # echoes SearchRequest.mode (no-op upstream for now)
 
 
 class SearchResult(BaseModel):
@@ -73,6 +74,11 @@ class SearchResult(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
+    # The Answer Mode select in the UI. Accepted + echoed back in meta, but it is a
+    # no-op upstream for now: the pipeline entrypoint is run_pipeline(query) only and
+    # agent/* must not be modified. Wire to real behaviour later if generator.py grows
+    # a mode parameter.
+    mode: str = "Strict Corpus-Only"
 
 
 # ---------------------------------------------------------------- status ----
@@ -83,3 +89,29 @@ class StatusResponse(BaseModel):
     video_chunks: int = 0
     corpus_pdfs: int = 0
     qdrant_ok: bool = False
+
+
+# ---------------------------------------------------------------- sources ----
+
+class CorpusSource(BaseModel):
+    """One de-duplicated source in the indexed corpus (for the Sources nav view)."""
+    source_name: str
+    author: str = "Unknown"
+    source_type: str = ""
+    institution: str = ""
+    cultural_perspective: str = ""
+    language_of_origin: str = ""
+    modality: str = ""
+    chunk_count: int = 0
+
+
+class SourcesResponse(BaseModel):
+    sources: list[CorpusSource] = Field(default_factory=list)
+    total: int = 0
+
+
+# ---------------------------------------------------------------- upload ----
+
+class UploadResponse(BaseModel):
+    saved: list[str] = Field(default_factory=list)     # filenames written to data/corpus/
+    skipped: list[str] = Field(default_factory=list)   # rejected (bad/unsupported name)

@@ -10,14 +10,15 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
-from . import parsing
-from .corpus import WORKSPACE, gather_status
+from . import corpus, parsing
+from .corpus import CORPUS_DIR, WORKSPACE, gather_status
 from .models import (
-    SearchMeta, SearchRequest, SearchResult, StatusResponse,
+    SearchMeta, SearchRequest, SearchResult, SourcesResponse, StatusResponse,
+    UploadResponse,
 )
 
 router = APIRouter(prefix="/api")
@@ -44,14 +45,29 @@ async def health() -> dict:
     return {"ok": True}
 
 
+# ----------------------------------------------------------- sources ----
+
+@router.get("/sources", response_model=SourcesResponse)
+async def sources() -> SourcesResponse:
+    """List the de-duplicated sources in the indexed corpus (Sources nav view)."""
+    payloads = await asyncio.to_thread(corpus.list_source_payloads)
+    items = parsing.dedup_corpus_sources(payloads)
+    return SourcesResponse(sources=items, total=len(items))
+
+
 # ----------------------------------------------------------- search ----
 
 def _image_url(path: str) -> str:
     return f"/api/images?path={quote(path)}"
 
 
-def _run_search(query: str) -> SearchResult:
-    """Blocking: call the existing pipeline and shape its output."""
+def _run_search(query: str, mode: str = "Strict Corpus-Only") -> SearchResult:
+    """Blocking: call the existing pipeline and shape its output.
+
+    `mode` is accepted from the UI's Answer Mode select and echoed back in meta,
+    but it does not alter pipeline behaviour: run_pipeline(query) is the only
+    entrypoint and agent/* must not be modified.
+    """
     from agent.pipeline import run_pipeline  # imported lazily (heavy deps)
 
     t0 = time.perf_counter()
@@ -84,6 +100,7 @@ def _run_search(query: str) -> SearchResult:
             image_count=len(image_items),
             elapsed_seconds=round(elapsed, 2),
             image_keyword=payload.get("layer_4_image_keyword"),
+            mode=mode,
         ),
     )
 
@@ -94,7 +111,7 @@ async def search(req: SearchRequest) -> SearchResult:
     if not query:
         raise HTTPException(status_code=422, detail="query must not be empty")
     try:
-        return await asyncio.to_thread(_run_search, query)
+        return await asyncio.to_thread(_run_search, query, req.mode)
     except Exception as e:  # surface pipeline errors as 500 with a message
         raise HTTPException(status_code=500, detail=f"pipeline error: {e}") from e
 
@@ -162,6 +179,34 @@ async def ingest(request: Request) -> EventSourceResponse:
             yield {"event": "done", "data": "Ingestion complete."}
 
     return EventSourceResponse(event_stream())
+
+
+# ----------------------------------------------------------- upload ----
+
+@router.post("/upload", response_model=UploadResponse)
+async def upload(files: list[UploadFile] = File(...)) -> UploadResponse:
+    """Save uploaded corpus files into data/corpus/ (parity with ui/app.py).
+
+    Reindexing is a separate step — the UI calls POST /api/ingest (SSE) afterwards.
+    Filenames are sanitised and restricted to the accepted-type allow-list; anything
+    else is reported in `skipped`.
+    """
+    CORPUS_DIR.mkdir(parents=True, exist_ok=True)
+    saved: list[str] = []
+    skipped: list[str] = []
+    for f in files:
+        safe = parsing.safe_corpus_filename(f.filename)
+        if not safe:
+            skipped.append(f.filename or "(unnamed)")
+            continue
+        dest = (CORPUS_DIR / safe).resolve()
+        # Defensive: ensure the resolved path stays inside the corpus dir.
+        if not str(dest).startswith(str(CORPUS_DIR.resolve())):
+            skipped.append(f.filename or "(unnamed)")
+            continue
+        dest.write_bytes(await f.read())
+        saved.append(safe)
+    return UploadResponse(saved=saved, skipped=skipped)
 
 
 # ----------------------------------------------------------- images ----

@@ -73,3 +73,40 @@ def test_build_video_chunks_filters_modality():
     assert len(vids) == 1
     assert vids[0].video_url == "http://x/v.mp4"     # http → seekable
     assert vids[0].timestamp == "1s – 5s"
+
+
+# ----------------------------------------------------------- sources view ----
+
+def test_dedup_corpus_sources_collapses_and_counts():
+    payloads = [
+        {"source_name": "Doc A.pdf", "author": "X", "source_type": "book",
+         "institution": "Inst", "language_of_origin": "italian"},
+        {"source_name": "Doc A.pdf", "author": "X"},                 # same source
+        {"source_name": "Doc B.pdf", "author": "Y", "modality": "audio_transcript"},
+        {"author": "no source name — skipped"},
+    ]
+    out = parsing.dedup_corpus_sources(payloads)
+    assert len(out) == 2
+    a = next(s for s in out if s.source_name == "Doc A.pdf")
+    assert a.chunk_count == 2
+    assert a.source_type == "book" and a.institution == "Inst"
+    # sorted by chunk_count desc → Doc A (2) before Doc B (1)
+    assert out[0].source_name == "Doc A.pdf"
+
+
+# ----------------------------------------------------------- upload names ----
+
+def test_safe_corpus_filename_accepts_and_strips_paths():
+    assert parsing.safe_corpus_filename("paper.pdf") == "paper.pdf"
+    assert parsing.safe_corpus_filename("clip.MP4") == "clip.MP4"
+    # path components stripped (traversal defence), basename kept
+    assert parsing.safe_corpus_filename("../../etc/evil.pdf") == "evil.pdf"
+    assert parsing.safe_corpus_filename("C:\\temp\\scan.png") == "scan.png"
+
+
+def test_safe_corpus_filename_rejects_bad():
+    assert parsing.safe_corpus_filename("notes.txt") is None        # unsupported ext
+    assert parsing.safe_corpus_filename("noext") is None
+    assert parsing.safe_corpus_filename("") is None
+    assert parsing.safe_corpus_filename(None) is None
+    assert parsing.safe_corpus_filename("../..") is None

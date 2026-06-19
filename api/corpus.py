@@ -72,3 +72,21 @@ def gather_status() -> dict:
         "corpus_pdfs": corpus_pdf_count(),
         "qdrant_ok": qdrant_ok(),
     }
+
+
+def list_source_payloads(limit: int = 10000) -> list[dict]:
+    """Scroll the text collection and return each point's payload.
+
+    Same scroll pattern as agent/retriever.py; the caller
+    (parsing.dedup_corpus_sources) collapses these into per-source rows.
+    """
+    try:
+        points, _ = _client().scroll(
+            collection_name=TEXT_COLLECTION,
+            with_payload=True,
+            with_vectors=False,
+            limit=limit,
+        )
+        return [p.payload or {} for p in points]
+    except Exception:
+        return []

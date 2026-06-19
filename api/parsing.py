@@ -9,14 +9,23 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from pathlib import PurePosixPath, PureWindowsPath
+
 from .models import (
-    Confidence, Epistemic, ImageItem, SourceItem, VideoChunk,
+    Confidence, CorpusSource, Epistemic, ImageItem, SourceItem, VideoChunk,
 )
 
 # The four canonical Layer-3 section headers emitted by agent/generator.py.
 L3_TITLES = ["⚠️ SOURCE BIAS", "📄 ABSENCES", "🕵️ INTERPRETIVE LIMITS", "⚠️ CONFIDENCE"]
 
 VIDEO_MODALITIES = {"audio_transcript", "visual_caption", "ocr_text"}
+
+# Upload allow-list — mirrors ui/app.py ACCEPTED_TYPES (PDF · images · video).
+ACCEPTED_UPLOAD_EXTS = {
+    "pdf",
+    "png", "jpg", "jpeg", "tiff", "bmp", "webp",
+    "mp4", "mov", "avi", "mkv", "webm",
+}
 
 
 # ----------------------------------------------------------- layer 3 ----
@@ -199,3 +208,62 @@ def build_images(image_hits: list[dict], url_builder) -> list[ImageItem]:
             source_name=name, page_number=page,
         ))
     return out
+
+
+# ----------------------------------------------------------- corpus sources ----
+
+def dedup_corpus_sources(payloads: list[dict]) -> list[CorpusSource]:
+    """Collapse raw Qdrant text-point payloads into one row per source_name.
+
+    Counts contributing chunks and keeps the first non-empty value seen for each
+    metadata field. Sorted by chunk_count desc, then name, for a stable list.
+    """
+    rows: dict[str, dict] = {}
+    for p in payloads or []:
+        name = (p or {}).get("source_name")
+        if not name:
+            continue
+        row = rows.setdefault(name, {"count": 0})
+        row["count"] += 1
+        for key in ("author", "source_type", "institution",
+                    "cultural_perspective", "language_of_origin", "modality"):
+            v = p.get(key)
+            if v and v not in ("unknown", "Unknown") and not row.get(key):
+                row[key] = str(v)
+
+    items = [
+        CorpusSource(
+            source_name=name,
+            author=r.get("author", "Unknown"),
+            source_type=r.get("source_type", ""),
+            institution=r.get("institution", ""),
+            cultural_perspective=r.get("cultural_perspective", ""),
+            language_of_origin=r.get("language_of_origin", ""),
+            modality=r.get("modality", ""),
+            chunk_count=r["count"],
+        )
+        for name, r in rows.items()
+    ]
+    items.sort(key=lambda s: (-s.chunk_count, s.source_name.lower()))
+    return items
+
+
+# ----------------------------------------------------------- upload names ----
+
+def safe_corpus_filename(filename: str | None) -> str | None:
+    """Return a safe basename for a corpus upload, or None if it must be rejected.
+
+    Strips any path component (defends against traversal on both posix/windows
+    separators) and enforces the ACCEPTED_UPLOAD_EXTS allow-list. Returns None for
+    empty names, missing/disallowed extensions, or names that resolve to nothing.
+    """
+    if not filename:
+        return None
+    # Take the last path segment regardless of separator style in the upload name.
+    base = PureWindowsPath(PurePosixPath(filename).name).name.strip()
+    if not base or base in (".", ".."):
+        return None
+    ext = base.rsplit(".", 1)[-1].lower() if "." in base else ""
+    if ext not in ACCEPTED_UPLOAD_EXTS:
+        return None
+    return base
