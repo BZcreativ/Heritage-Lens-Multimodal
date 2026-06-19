@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/atkinson-hyperlegible/400.css";
+@import "@fontsource/atkinson-hyperlegible/700.css";
+@import "@fontsource/opendyslexic/400.css";
+@import "@fontsource/opendyslexic/700.css";
+
+/* Dark mode is class-based: we toggle `.dark` on <html>/<body>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================ design tokens
+   Ported from docs/design/README.md "Design Tokens". These live as CSS custom
+   properties so both Tailwind utilities (via var()) and raw CSS can read them. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e9edf2;
+  --border: #e2e6ec;
+  --border-strong: #d2d8e0;
+  --text: #1a1e24;
+  --text-soft: #5a626d;
+  --text-faint: #8b929c;
+
+  --answer: #2f6fdb;
+  --answer-bg: #eef4fe;
+  --sources: #7c5cd6;
+  --sources-bg: #f3effc;
+  --epi: #0d9488;
+  --epi-bg: #f0faf8;
+
+  --good: #1f9d63;
+  --warn: #c2820f;
+  --bad: #cf5a52;
+  --info: #2f6fdb;
+
+  /* radii */
+  --r: 14px;
+  --r-sm: 9px;
+
+  /* shadows */
+  --shadow: 0 1px 2px rgba(20, 24, 31, .04), 0 4px 16px rgba(20, 24, 31, .05);
+  --shadow-lg: 0 8px 40px rgba(20, 24, 31, .16);
+  --shadow-epi: 0 1px 2px rgba(13, 148, 136, .06), 0 6px 24px rgba(13, 148, 136, .10);
+
+  /* reading-comfort live vars (scoped onto .answer-doc; defaults here) */
+  --rc-font: "Inter", system-ui, sans-serif;
+  --rc-ls: 0em;
+  --rc-lh: 1.65;
+  --rc-width: 68ch;
+  --rc-align: justify;
+  --rc-bg: transparent;
+  --rc-ink: var(--text);
+  --rc-pad: 0px;
+}
+
+.dark {
+  --bg: #0e1217;
+  --surface: #161b21;
+  --surface-2: #1c222a;
+  --surface-3: #232a33;
+  --border: #2a313b;
+  --border-strong: #36404b;
+  --text: #e7eaee;
+  --text-soft: #99a2ac;
+  --text-faint: #6b7480;
+
+  --answer: #6ea2f5;
+  --answer-bg: #16243a;
+  --sources: #b39bf0;
+  --sources-bg: #221c38;
+  --epi: #3fd0c0;
+  --epi-bg: #10211f;
+
+  --good: #46c98a;
+  --warn: #e0ad4e;
+  --bad: #ec7b73;
+  --info: #6ea2f5;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 18px rgba(0, 0, 0, .5);
+  --shadow-lg: 0 8px 44px rgba(0, 0, 0, .6);
+  --shadow-epi: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 24px rgba(63, 208, 192, .14);
+}
+
+/* Expose the tokens to Tailwind v4's theme so utilities like bg-surface,
+   text-soft, border-border, rounded-r resolve to the vars above. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-soft: var(--text-soft);
+  --color-faint: var(--text-faint);
+  --color-answer: var(--answer);
+  --color-answer-bg: var(--answer-bg);
+  --color-sources: var(--sources);
+  --color-sources-bg: var(--sources-bg);
+  --color-epi: var(--epi);
+  --color-epi-bg: var(--epi-bg);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-info: var(--info);
+  --radius-r: var(--r);
+  --radius-r-sm: var(--r-sm);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s ease, color .2s ease;
+}
+
+button { font-family: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}
