@@ -3,6 +3,7 @@ import { useNav, type NavView } from '../context/NavContext'
 import { useSearch } from '../context/SearchContext'
 import { useStatus } from '../context/StatusContext'
 import { useTheme } from '../context/ThemeContext'
+import { useUI } from '../context/UIContext'
 import type { AnswerMode } from '../lib/types'
 
 const NAV: { id: NavView; label: string; icon: typeof MessageSquare }[] = [
@@ -19,10 +20,9 @@ export function Sidebar() {
   const { mode, setMode } = useSearch()
   const { status } = useStatus()
   const { dark, toggle } = useTheme()
-
-  // "Show all layers" is a client-side render preference (kept simple: it is on
-  // and the epistemic panel always shows, matching the design's default).
-  const showLayers = true
+  // "Show all layers" toggles the transparency layers (sources + epistemic) in
+  // the results view; persisted, on by default to match the design.
+  const { showLayers, toggleLayers } = useUI()
 
   return (
     <aside className="sidebar">
@@ -48,7 +48,7 @@ export function Sidebar() {
             <Icon />
             {label}
             {id === 'sources' && status && (
-              <span className="count">{status.corpus_pdfs}</span>
+              <span className="count">{status.source_count}</span>
             )}
           </button>
         ))}
@@ -70,7 +70,7 @@ export function Sidebar() {
           ))}
         </select>
         <div className="switch-row" style={{ marginTop: 6 }}>
-          <button className="sw" role="switch" aria-checked={showLayers} aria-label="Show all transparency layers" />
+          <button className="sw" role="switch" aria-checked={showLayers} aria-label="Show all transparency layers" onClick={toggleLayers} />
           Show all layers
         </div>
         <div className="side-note">

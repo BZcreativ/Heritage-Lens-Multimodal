@@ -34,7 +34,8 @@ export interface VideoChunk {
   end: number | null
   caption: string
   source_name: string
-  video_url: string | null
+  video_url: string | null  // playable: external http(s) or /api/media?path=...
+  poster_url: string | null // thumbnail keyframe via /api/images?path=...
 }
 
 export interface ImageItem {
@@ -71,6 +72,7 @@ export interface StatusResponse {
   image_count: number
   video_chunks: number
   corpus_pdfs: number
+  source_count: number
   qdrant_ok: boolean
 }
 
@@ -93,6 +95,14 @@ export interface SourcesResponse {
 export interface UploadResponse {
   saved: string[]
   skipped: string[]
+}
+
+export interface DeleteSourceResponse {
+  source_name: string
+  text_points_deleted: number
+  image_points_deleted: number
+  cache_images_deleted: number
+  file_removed: boolean
 }
 
 // The three Answer Mode options shown in the sidebar select.

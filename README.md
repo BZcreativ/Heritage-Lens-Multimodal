@@ -28,6 +28,9 @@ A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates 
   - *Audio* — transcription via **Parakeet v3** (`onnx-asr`, default) with **faster-whisper fallback**; optional **GLM-4.5V** scene captions + **Tesseract OCR** (Phase B). All timestamped and modality-tagged into `heritage_lens_text`.
 - **Streamlit 3-panel UI** with upload→index, a Video Evidence gallery, and modality badges.
 - **Web UI (new, branch `feature/web-ui`)** — a **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design. Every nav item (Ask / Sources / Uploads / Sessions) binds to a real endpoint; three-panel results, galleries + lightbox, dark mode, reading-comfort. Served by one host service (`heritage-api`, `127.0.0.1:8000`) alongside Streamlit (:8501). See [ARCHITECTURE.md §5b](ARCHITECTURE.md).
+  - **Functional Answer Mode** — Strict Corpus-Only / Corpus + Background / Exploratory now actually change behaviour: retrieval breadth (`top_k`), generation strictness, and temperature, not just an echoed label.
+  - **Source management** — delete a source from the Sources view (confirm dialog) → removes its text + image vectors **and** its files on disk via `DELETE /api/sources/{name}`.
+  - **In-app media playback** — video/audio chunks play inline in the gallery + lightbox, with keyframe posters, served range-aware by `GET /api/media`.
 - **Verified state (2026-06-13):** `heritage_lens_text` = 623 chunks · `heritage_lens_images` = 165 (incl. video keyframes).
 
 > **Note on storage:** everything searchable is embedded into Qdrant, but Qdrant stores *vectors + metadata*, not raw files. Image **files** live on disk (`data/cache/images/`); Qdrant holds the vector + an `image_path` pointer. See ARCHITECTURE.md §2.
@@ -122,6 +125,7 @@ Run/setup details (deps, ingest, env knobs `HL_ASR_BACKEND` / `HL_WHISPER_MODEL`
 | 2026-06-13 | Hardening: shared `env_loader`, deterministic point IDs, multilingual OCR, frame sampling, model singletons; fixed GLM model id (`glm-4.5v` + thinking-disabled) and an image-cache permission bug. |
 | 2026-06-13 | **ASR swapped to Parakeet v3** (multilingual, lighter) behind `HL_ASR_BACKEND`, whisper fallback — resolves the full-ingest OOM. |
 | 2026-06-19 | **Web UI rebuild** (branch `feature/web-ui`): **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design; new `/api/sources` + `/api/upload` endpoints so every nav item is backed; single-service deploy (`heritage-api`, uvicorn serves API + SPA on `127.0.0.1:8000`). Node 18→20. Streamlit + `agent/*`/`config/*` untouched. |
+| 2026-06-24 | **Corpus management + playback** (branch `feature/corpus-management`): **Answer Mode made functional** — `agent/pipeline.py` + `agent/generator.py` now thread `mode` to set retrieval breadth (`top_k`), corpus-grounding strictness, and temperature (supersedes the 2026-06-19 "`agent/*` untouched" note). **Source deletion** via `DELETE /api/sources/{name}` (removes text + image vectors and on-disk files; confirm-dialog UI). **In-app audio/video playback** via range-aware `GET /api/media` + keyframe posters, played inline in the gallery + lightbox. |
 
 Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 

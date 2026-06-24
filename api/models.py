@@ -40,7 +40,8 @@ class VideoChunk(BaseModel):
     end: Optional[float] = None
     caption: str = ""                # chunk text (trimmed)
     source_name: str = ""
-    video_url: Optional[str] = None  # seekable only if http(s)
+    video_url: Optional[str] = None  # playable: external http(s) or /api/media?path=...
+    poster_url: Optional[str] = None # thumbnail keyframe via /api/images?path=...
 
 
 class ImageItem(BaseModel):
@@ -88,6 +89,7 @@ class StatusResponse(BaseModel):
     image_count: int = 0
     video_chunks: int = 0
     corpus_pdfs: int = 0
+    source_count: int = 0
     qdrant_ok: bool = False
 
 
@@ -108,6 +110,15 @@ class CorpusSource(BaseModel):
 class SourcesResponse(BaseModel):
     sources: list[CorpusSource] = Field(default_factory=list)
     total: int = 0
+
+
+class DeleteSourceResponse(BaseModel):
+    """Result of fully removing one source (vectors + files)."""
+    source_name: str
+    text_points_deleted: int = 0
+    image_points_deleted: int = 0
+    cache_images_deleted: int = 0
+    file_removed: bool = False
 
 
 # ---------------------------------------------------------------- upload ----
