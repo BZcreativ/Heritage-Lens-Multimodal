@@ -1,0 +1,15 @@
+{
+  "rules": [
+    {
+      "action": "block",
+      "description": "api-rate-limit",
+      "expression": "(starts_with(http.request.uri.path, \"/api/\")) and not (starts_with(http.request.uri.path, \"/api/images\") or starts_with(http.request.uri.path, \"/api/media\"))",
+      "ratelimit": {
+        "characteristics": ["ip.src", "cf.colo.id"],
+        "period": 10,
+        "requests_per_period": 20,
+        "mitigation_timeout": 10
+      }
+    }
+  ]
+}
