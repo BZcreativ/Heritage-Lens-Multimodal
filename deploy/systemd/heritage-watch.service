@@ -1,0 +1,16 @@
+[Unit]
+Description=Heritage Lens abuse watcher (journal -> ntfy alerts)
+After=heritage-api.service network-online.target
+Wants=heritage-api.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/heritage-watch.env
+ExecStart=/usr/bin/python3 /usr/local/bin/heritage-watch.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
