@@ -163,7 +163,14 @@ def build_sources(chunks: list[dict]) -> list[SourceItem]:
 
 # ----------------------------------------------------------- video ----
 
-def build_video_chunks(chunks: list[dict], limit: int = 6) -> list[VideoChunk]:
+def build_video_chunks(chunks: list[dict], media_url_for, poster_url_for, limit: int = 6) -> list[VideoChunk]:
+    """Map Qdrant video-derived chunks to frontend items.
+
+    `media_url_for(meta) -> str | None` yields a playable URL (external http(s) or
+    a local /api/media URL); `poster_url_for(video_id, start) -> str | None` yields
+    a thumbnail URL from the extracted keyframes. Both injected by the API layer so
+    this module stays filesystem-agnostic.
+    """
     out: list[VideoChunk] = []
     for ch in chunks or []:
         meta = ch.get("metadata", {}) or {}
@@ -175,11 +182,11 @@ def build_video_chunks(chunks: list[dict], limit: int = 6) -> list[VideoChunk]:
             text = text[:160] + "…"
         start, end = meta.get("start"), meta.get("end")
         ts = f"{start}s – {end}s" if start is not None and end is not None else ""
-        url = meta.get("video_url")
         out.append(VideoChunk(
             modality=modality, timestamp=ts, start=start, end=end,
             caption=text, source_name=meta.get("source_name", ""),
-            video_url=url if (isinstance(url, str) and url.startswith("http")) else None,
+            video_url=media_url_for(meta),
+            poster_url=poster_url_for(meta.get("video_id"), start),
         ))
         if len(out) >= limit:
             break

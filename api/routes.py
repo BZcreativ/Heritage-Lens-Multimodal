@@ -15,10 +15,10 @@ from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 from . import corpus, parsing
-from .corpus import CORPUS_DIR, WORKSPACE, gather_status
+from .corpus import CACHE_IMAGES_DIR, CORPUS_DIR, WORKSPACE, gather_status
 from .models import (
-    SearchMeta, SearchRequest, SearchResult, SourcesResponse, StatusResponse,
-    UploadResponse,
+    DeleteSourceResponse, SearchMeta, SearchRequest, SearchResult, SourcesResponse,
+    StatusResponse, UploadResponse,
 )
 
 router = APIRouter(prefix="/api")
@@ -55,30 +55,70 @@ async def sources() -> SourcesResponse:
     return SourcesResponse(sources=items, total=len(items))
 
 
+@router.delete("/sources/{source_name}", response_model=DeleteSourceResponse)
+async def delete_source(source_name: str) -> DeleteSourceResponse:
+    """Fully remove one source: vectors (text + image) plus its files on disk."""
+    result = await asyncio.to_thread(corpus.delete_source, source_name)
+    if (
+        result["text_points_deleted"] == 0
+        and result["image_points_deleted"] == 0
+        and not result["file_removed"]
+    ):
+        raise HTTPException(status_code=404, detail=f"source not found: {source_name}")
+    return DeleteSourceResponse(**result)
+
+
 # ----------------------------------------------------------- search ----
 
 def _image_url(path: str) -> str:
     return f"/api/images?path={quote(path)}"
 
 
+def _media_url(path: str) -> str:
+    return f"/api/media?path={quote(path)}"
+
+
+def _video_media_url(meta: dict) -> str | None:
+    """Playable URL for a video chunk: external http(s) as-is, else the retained
+    corpus file via /api/media (None if the file is no longer on disk)."""
+    url = meta.get("video_url")
+    if isinstance(url, str) and url.startswith("http"):
+        return url
+    src = (CORPUS_DIR / meta.get("source_name", "")).resolve()
+    return _media_url(str(src)) if src.is_file() else None
+
+
+def _video_poster_url(video_id: str | None, start: float | None) -> str | None:
+    """Nearest extracted keyframe (data/cache/images/{video_id}_t{sec}.png) as an
+    /api/images URL, or None. Frames are ~1 fps, so a small window suffices."""
+    if not video_id:
+        return None
+    sec = int(start or 0)
+    for delta in (0, 1, -1, 2, -2):
+        frame = CACHE_IMAGES_DIR / f"{video_id}_t{sec + delta}.png"
+        if frame.is_file():
+            return _image_url(str(frame))
+    return None
+
+
 def _run_search(query: str, mode: str = "Strict Corpus-Only") -> SearchResult:
     """Blocking: call the existing pipeline and shape its output.
 
-    `mode` is accepted from the UI's Answer Mode select and echoed back in meta,
-    but it does not alter pipeline behaviour: run_pipeline(query) is the only
-    entrypoint and agent/* must not be modified.
+    `mode` is the UI's Answer Mode select; it is threaded into the pipeline to
+    control corpus-grounding strictness, retrieval breadth, and temperature, and
+    is echoed back in meta.
     """
     from agent.pipeline import run_pipeline  # imported lazily (heavy deps)
 
     t0 = time.perf_counter()
-    payload = run_pipeline(query)
+    payload = run_pipeline(query, mode=mode)
     elapsed = time.perf_counter() - t0
 
     chunks = payload.get("retrieved_chunks", []) or []
     images = payload.get("retrieved_images", []) or []
 
     sources = parsing.build_sources(chunks)
-    video_chunks = parsing.build_video_chunks(chunks)
+    video_chunks = parsing.build_video_chunks(chunks, _video_media_url, _video_poster_url)
     image_items = parsing.build_images(images, _image_url)
     epistemic = parsing.build_epistemic(payload.get("layer_3_transparency", ""))
 
@@ -224,6 +264,34 @@ async def serve_image(path: str = Query(..., description="absolute or repo-relat
 
     if not any(str(resolved).startswith(str(base)) for base in _ALLOWED_IMAGE_DIRS):
         raise HTTPException(status_code=403, detail="path not allowed")
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(str(resolved))
+
+
+# ----------------------------------------------------------- media ----
+
+# Audio/video extensions the media route may serve (keeps the surface tight).
+_MEDIA_EXTS = {".mp4", ".webm", ".mov", ".m4a", ".mp3", ".wav"}
+
+
+@router.get("/media")
+async def serve_media(path: str = Query(..., description="absolute or repo-relative media path")) -> FileResponse:
+    """Serve an audio/video file for in-app playback, restricted to the allow-listed
+    directories. Starlette's FileResponse honours Range requests (206), so the
+    browser can seek without downloading the whole file."""
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = (WORKSPACE / candidate)
+    try:
+        resolved = candidate.resolve()
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad path")
+
+    if not any(str(resolved).startswith(str(base)) for base in _ALLOWED_IMAGE_DIRS):
+        raise HTTPException(status_code=403, detail="path not allowed")
+    if resolved.suffix.lower() not in _MEDIA_EXTS:
+        raise HTTPException(status_code=403, detail="not a media file")
     if not resolved.is_file():
         raise HTTPException(status_code=404, detail="not found")
     return FileResponse(str(resolved))

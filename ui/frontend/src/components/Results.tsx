@@ -37,7 +37,7 @@ function toMarkdown(r: SearchResult): string {
 
 export function Results({ result }: { result: SearchResult }) {
   const { error } = useSearch()
-  const { toast } = useUI()
+  const { toast, showLayers } = useUI()
 
   const share = () => {
     const url = `${location.origin}${location.pathname}#q=${encodeURIComponent(result.query)}`
@@ -87,7 +87,7 @@ export function Results({ result }: { result: SearchResult }) {
 
       <div className="panels">
         <AnswerPanel result={result} />
-        <SourcesPanel sources={result.sources} />
+        {showLayers && <SourcesPanel sources={result.sources} />}
       </div>
 
       <VideoGallery chunks={result.video_chunks} />
