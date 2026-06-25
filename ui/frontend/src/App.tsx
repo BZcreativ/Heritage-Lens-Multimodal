@@ -3,7 +3,7 @@ import { ReadingProvider } from './context/ReadingContext'
 import { StatusProvider } from './context/StatusContext'
 import { NavProvider, useNav } from './context/NavContext'
 import { SearchProvider } from './context/SearchContext'
-import { UIProvider } from './context/UIContext'
+import { UIProvider, useUI } from './context/UIContext'
 
 import { Sidebar } from './components/Sidebar'
 import { TopBar } from './components/TopBar'
@@ -33,6 +33,9 @@ function CurrentView() {
 }
 
 function Shell() {
+  // Scrim sits behind the mobile nav drawer; tapping it closes the drawer.
+  // Inert on desktop (display:none unless the phone media query + open drawer).
+  const { toggleNav } = useUI()
   return (
     <>
       <div className="app">
@@ -45,6 +48,7 @@ function Shell() {
         </main>
         <RightRail />
         <Footer />
+        <div className="nav-scrim" onClick={toggleNav} />
       </div>
       <ReadingComfortPanel />
       <Lightbox />

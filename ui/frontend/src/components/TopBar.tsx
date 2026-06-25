@@ -29,7 +29,9 @@ export function TopBar() {
       <span className="grow" />
       <span className="status-mini">
         <span className={`status-dot${ok ? '' : ' off'}`} />
-        {ok ? `Corpus ready · ${sourceCount} sources` : 'Corpus offline'}
+        <span className="status-label">
+          {ok ? `Corpus ready · ${sourceCount} sources` : 'Corpus offline'}
+        </span>
       </span>
       <button className="icon-btn" onClick={toggle} title="Toggle dark mode" aria-label="Toggle dark mode">
         {dark ? <Moon /> : <Sun />}

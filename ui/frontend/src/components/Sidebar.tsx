@@ -22,7 +22,14 @@ export function Sidebar() {
   const { dark, toggle } = useTheme()
   // "Show all layers" toggles the transparency layers (sources + epistemic) in
   // the results view; persisted, on by default to match the design.
-  const { showLayers, toggleLayers } = useUI()
+  const { showLayers, toggleLayers, navCollapsed, toggleNav } = useUI()
+
+  // On phones the sidebar is an overlay drawer; close it after picking a view
+  // so the user isn't stranded behind it.
+  const selectView = (id: NavView) => {
+    setView(id)
+    if (window.innerWidth <= 820 && !navCollapsed) toggleNav()
+  }
 
   return (
     <aside className="sidebar">
@@ -42,7 +49,7 @@ export function Sidebar() {
           <button
             key={id}
             className={`nav-item${view === id ? ' active' : ''}`}
-            onClick={() => setView(id)}
+            onClick={() => selectView(id)}
             aria-current={view === id ? 'page' : undefined}
           >
             <Icon />
