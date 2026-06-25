@@ -35,7 +35,12 @@ export function UIProvider({ children }: { children: ReactNode }) {
     'hl_col_nav',
     typeof window !== 'undefined' && window.innerWidth <= 820,
   )
-  const [railCollapsed, setRail] = usePersistedState<boolean>('hl_col_rail', false)
+  // Like the nav drawer, default the session panel collapsed on phones so the
+  // empty Ask screen isn't cluttered with session stats before any search.
+  const [railCollapsed, setRail] = usePersistedState<boolean>(
+    'hl_col_rail',
+    typeof window !== 'undefined' && window.innerWidth <= 820,
+  )
   const [sessionMasked, setMasked] = usePersistedState<boolean>('hl_session_masked', false)
   const [showLayers, setShowLayers] = usePersistedState<boolean>('hl_show_layers', true)
   const [readingOpen, setReadingOpen] = useState(false)

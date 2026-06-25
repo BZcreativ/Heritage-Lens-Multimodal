@@ -475,7 +475,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
      create a phantom horizontal scrollbar. overflow-x:clip keeps the sticky
      top bar working (unlike overflow-x:hidden). */
   html, body { overflow-x: clip; }
-  .app, body.nav-collapsed .app { grid-template-columns: 1fr; }
+  /* Force a single column for every nav/rail collapse combination — the base
+     body.*-collapsed .app rules have higher specificity and would otherwise
+     reintroduce phantom 0/248px tracks on mobile. */
+  .app,
+  body.nav-collapsed .app,
+  body.rail-collapsed .app,
+  body.nav-collapsed.rail-collapsed .app { grid-template-columns: 1fr; }
   /* Pin main + rail into the single column; otherwise their desktop/tablet
      grid-column:2 spawns a phantom track that shoves content off-centre. */
   .main, .rail { grid-column: 1; }
@@ -507,6 +513,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
   .kbd { display: none; }
   .searchbar input { min-width: 0; } /* let input shrink so the button stays on-screen */
   .search-btn { padding: 10px 13px; }
-  .how { padding: 16px 14px; }
+  /* Tighten the hero so it doesn't dominate the small first screen. */
+  .empty { padding-top: 16px; }
+  .empty h2 { font-size: 21px; }
+  .empty p { font-size: 14px; }
+  /* Stack the footer so the step pills flow left-aligned instead of wrapping
+     into a ragged right-pushed cluster beside the label. */
+  .how { padding: 16px 14px; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .how .flow { flex: none; width: 100%; }
   .footer-tag { padding: 0 14px 16px; }
 }
