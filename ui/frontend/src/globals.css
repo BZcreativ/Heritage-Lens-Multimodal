@@ -476,6 +476,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
      top bar working (unlike overflow-x:hidden). */
   html, body { overflow-x: clip; }
   .app, body.nav-collapsed .app { grid-template-columns: 1fr; }
+  /* Pin main + rail into the single column; otherwise their desktop/tablet
+     grid-column:2 spawns a phantom track that shoves content off-centre. */
+  .main, .rail { grid-column: 1; }
   /* Sidebar becomes an off-canvas drawer; nav-collapsed = closed. Keep it
      displayed (override the desktop collapse rule) so it can slide. */
   .sidebar {
@@ -502,6 +505,7 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
   .content { padding: 14px 14px 26px; }
   .img-grid { grid-template-columns: 1fr 1fr; }
   .kbd { display: none; }
+  .searchbar input { min-width: 0; } /* let input shrink so the button stays on-screen */
   .search-btn { padding: 10px 13px; }
   .how { padding: 16px 14px; }
   .footer-tag { padding: 0 14px 16px; }
