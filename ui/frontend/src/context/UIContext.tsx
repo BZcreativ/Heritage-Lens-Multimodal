@@ -29,7 +29,12 @@ interface UICtx {
 const Ctx = createContext<UICtx | null>(null)
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [navCollapsed, setNav] = usePersistedState<boolean>('hl_col_nav', false)
+  // On phones the sidebar becomes a slide-in drawer; default it closed so it
+  // doesn't cover content on first load. (Desktop default stays open.)
+  const [navCollapsed, setNav] = usePersistedState<boolean>(
+    'hl_col_nav',
+    typeof window !== 'undefined' && window.innerWidth <= 820,
+  )
   const [railCollapsed, setRail] = usePersistedState<boolean>('hl_col_rail', false)
   const [sessionMasked, setMasked] = usePersistedState<boolean>('hl_session_masked', false)
   const [showLayers, setShowLayers] = usePersistedState<boolean>('hl_show_layers', true)
