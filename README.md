@@ -41,11 +41,11 @@ A **Judge** (second GPT-5.6 Luna Pro call) checks Layer 3 for specificity and re
 
 | Component | Tool |
 |-----------|------|
-| Answers + Judge | OpenAI GPT-5.6 Luna Pro |
+| Answers + Judge | OpenAI GPT-5.6 Luna Pro (OpenRouter) — configurable via `OPENAI_MODEL` |
 | Text embeddings | `all-MiniLM-L6-v2` (384-dim) |
 | Image embeddings | `google/siglip2-base-patch16-224` (768-dim) |
 | Speech-to-text | **Parakeet v3** (`nemo-parakeet-tdt-0.6b-v3` int8, via `onnx-asr` + Silero VAD) — default; `faster-whisper` fallback (`HL_ASR_BACKEND`) |
-| Frame captioning | **GLM-4.5V** via z.ai (GPT-5.6 Luna Pro vision fallback) |
+| Frame captioning | **GLM-4.5V** via z.ai (GPT-5.6 Luna Pro vision fallback, `OPENAI_VISION_MODEL`) |
 | OCR | Tesseract (`eng+ita+spa`) |
 | RAG pipeline | LlamaIndex |
 | Vector DB | Qdrant (Docker, `localhost:6333`) |
@@ -110,7 +110,7 @@ heritage-lens-multimodal/
 └── docker-compose.yml   <- Qdrant + Redis
 ```
 
-Run/setup details (deps, ingest, env knobs `HL_ASR_BACKEND` / `HL_WHISPER_MODEL` / `HL_FRAME_INTERVAL` / `HL_OCR_LANG`) are in [VIDEO_RUN_INSTRUCTIONS.md](VIDEO_RUN_INSTRUCTIONS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+Run/setup details (deps, ingest, env knobs `OPENAI_MODEL` / `OPENAI_VISION_MODEL` / `HL_ASR_BACKEND` / `HL_WHISPER_MODEL` / `HL_FRAME_INTERVAL` / `HL_OCR_LANG`) are in [VIDEO_RUN_INSTRUCTIONS.md](VIDEO_RUN_INSTRUCTIONS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -126,6 +126,7 @@ Run/setup details (deps, ingest, env knobs `HL_ASR_BACKEND` / `HL_WHISPER_MODEL`
 | 2026-06-13 | **ASR swapped to Parakeet v3** (multilingual, lighter) behind `HL_ASR_BACKEND`, whisper fallback — resolves the full-ingest OOM. |
 | 2026-06-19 | **Web UI rebuild** (branch `feature/web-ui`): **FastAPI** layer (`api/`) wrapping the pipeline + a **React/Vite/TS/Tailwind 4** SPA (`ui/frontend/`) recreating the approved design; new `/api/sources` + `/api/upload` endpoints so every nav item is backed; single-service deploy (`heritage-api`, uvicorn serves API + SPA on `127.0.0.1:8000`). Node 18→20. Streamlit + `agent/*`/`config/*` untouched. |
 | 2026-06-24 | **Corpus management + playback** (branch `feature/corpus-management`): **Answer Mode made functional** — `agent/pipeline.py` + `agent/generator.py` now thread `mode` to set retrieval breadth (`top_k`), corpus-grounding strictness, and temperature (supersedes the 2026-06-19 "`agent/*` untouched" note). **Source deletion** via `DELETE /api/sources/{name}` (removes text + image vectors and on-disk files; confirm-dialog UI). **In-app audio/video playback** via range-aware `GET /api/media` + keyframe posters, played inline in the gallery + lightbox. |
+| 2026-07-31 | **Configurable LLM model** (branch `feature/mobile-ui`): the OpenAI model is no longer hardcoded — `agent/env_loader.py` exposes `get_llm_model()` (`OPENAI_MODEL`) and `get_llm_vision_model()` (`OPENAI_VISION_MODEL`, falls back to the text model), consumed by generator / judge / video-caption. Default set to `openai/gpt-5.6-luna-pro`. **Multilingual answers + UI localization (WIP):** a `language` selection threaded api → pipeline → generator (forces the answer language; layer-3 structural tokens stay fixed for the parser) plus a `LanguageMenu` and `en`/`es`/`fr`/`it` dictionaries in the SPA. |
 
 Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 
