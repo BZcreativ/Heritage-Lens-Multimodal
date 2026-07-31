@@ -2,7 +2,7 @@ import os
 import json
 from collections import Counter
 from openai import OpenAI
-from agent.env_loader import load_env
+from agent.env_loader import load_env, get_llm_model
 
 load_env()
 # client initialization moved inside generate_response to prevent early failure
@@ -81,11 +81,13 @@ MODE_TEMPERATURE = {
     "Exploratory": 0.6,
 }
 
-def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedback: str = None, mode: str = "Strict Corpus-Only") -> dict:
+def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedback: str = None, mode: str = "Strict Corpus-Only", language: str = None) -> dict:
     """
-    Generates the three-layer answer required by the Heritage Lens Agent using GPT-4o.
+    Generates the three-layer answer required by the Heritage Lens Agent using the configured OpenAI model (OPENAI_MODEL).
     Accepts an optional `rejection_feedback` to correct course if Judge evaluates negatively.
     `mode` is the UI Answer Mode and controls corpus-grounding strictness and temperature.
+    `language`, when set ("English"/"Italian"/"Spanish"/"French"), forces the answer prose into
+    that language regardless of the query language; None keeps the auto-detect behaviour.
     """
     client = OpenAI()
     # Evaluate weak retrieval (only if chunks are literally empty)
@@ -193,8 +195,29 @@ You MUST output your entire response in the EXACT SAME LANGUAGE as the user's qu
     # Answer Mode: defines the relationship between corpus evidence and interpretation.
     system_prompt += MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["Strict Corpus-Only"])
 
+    # Explicit language override (UI language dropdown). Appended last so it wins over
+    # the query-language auto-detection above. Structural tokens stay fixed so the
+    # downstream parser (api/parsing.py) keeps working in any language.
+    if language:
+        system_prompt += (
+            f"\n\nLANGUAGE OVERRIDE (HIGHEST PRIORITY):\n"
+            f"Write ALL prose — 'layer_1_answer', 'layer_2_sources', and the analysis TEXT under each "
+            f"'layer_3_transparency' section — entirely in {language}, regardless of the language of the "
+            f"user's query or the retrieved sources. This overrides the auto-detection rules above.\n"
+            f"EXCEPTIONS that must NOT be translated:\n"
+            f"1. The four 'layer_3_transparency' section titles must stay EXACTLY as specified, in English, "
+            f"unchanged: '⚠️ SOURCE BIAS', '📄 ABSENCES', '🕵️ INTERPRETIVE LIMITS', '⚠️ CONFIDENCE'. "
+            f"They are machine-readable anchors, not display text.\n"
+            f"2. The '⚠️ CONFIDENCE' section MUST begin with exactly one English word — 'High', 'Moderate', "
+            f"or 'Low' — followed by your explanation in {language}.\n"
+            f"3. 'layer_4_image_keyword' stays in the original source language (Italian/Spanish), never "
+            f"translated to {language}.\n"
+            f"4. The literal background marker '[BACKGROUND — not retrieved]' must stay in English "
+            f"exactly as written wherever you use it, even inside {language} prose."
+        )
+
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=get_llm_model(),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query}

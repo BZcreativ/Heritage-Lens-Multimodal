@@ -1,4 +1,5 @@
 import { Video, Play } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { VideoChunk } from '../lib/types'
 import { useUI } from '../context/UIContext'
 
@@ -7,10 +8,10 @@ const MODALITY_CLASS: Record<string, string> = {
   visual_caption: 'visual',
   ocr_text: 'ocr',
 }
-const MODALITY_LABEL: Record<string, string> = {
-  audio_transcript: 'Audio',
-  visual_caption: 'Visual',
-  ocr_text: 'OCR',
+const MODALITY_KEY: Record<string, string> = {
+  audio_transcript: 'video.audio',
+  visual_caption: 'video.visual',
+  ocr_text: 'video.ocr',
 }
 
 function fmtTime(s: number | null): string {
@@ -34,13 +35,14 @@ function seekHref(v: VideoChunk): string | null {
 }
 
 export function VideoGallery({ chunks }: { chunks: VideoChunk[] }) {
+  const { t } = useTranslation()
   const { openVideoLightbox } = useUI()
   if (chunks.length === 0) return null
   return (
     <div className="gallery">
       <h3>
         <Video />
-        Video Evidence <span className="cnt">{chunks.length} chunks</span>
+        {t('video.title')} <span className="cnt">{t('video.chunks', { count: chunks.length })}</span>
       </h3>
       <div className="vid-grid">
         {chunks.map((v, i) => {
@@ -53,13 +55,13 @@ export function VideoGallery({ chunks }: { chunks: VideoChunk[] }) {
                   type="button"
                   className="ph"
                   onClick={() => openVideoLightbox(v)}
-                  aria-label={`Play ${v.source_name || 'video'} at ${fmtTime(v.start)}`}
+                  aria-label={t('video.play', { name: v.source_name || t('video.videoFallback'), time: fmtTime(v.start) })}
                 >
                   {v.poster_url && <img className="ph-poster" src={v.poster_url} alt="" loading="lazy" />}
                   <div className="play">
                     <Play />
                   </div>
-                  <span className="ph-name">{v.source_name || 'video'}</span>
+                  <span className="ph-name">{v.source_name || t('video.videoFallback')}</span>
                 </button>
               ) : (
                 <div className="ph">
@@ -67,23 +69,23 @@ export function VideoGallery({ chunks }: { chunks: VideoChunk[] }) {
                   <div className="play">
                     <Play />
                   </div>
-                  <span className="ph-name">{v.source_name || 'video'}</span>
+                  <span className="ph-name">{v.source_name || t('video.videoFallback')}</span>
                 </div>
               )}
               <div className="vid-meta">
                 <span className={`modality ${MODALITY_CLASS[v.modality] ?? 'audio'}`}>
-                  {MODALITY_LABEL[v.modality] ?? v.modality}
+                  {MODALITY_KEY[v.modality] ? t(MODALITY_KEY[v.modality]) : v.modality}
                 </span>
                 {v.caption && <p className="cap">{v.caption}</p>}
                 {playable ? (
                   <button className="seek" type="button" onClick={() => openVideoLightbox(v)}>
                     <Play />
-                    Play at {fmtTime(v.start)}
+                    {t('video.playAt', { time: fmtTime(v.start) })}
                   </button>
                 ) : href ? (
                   <a className="seek" href={href} target="_blank" rel="noreferrer">
                     <Play />
-                    Seek to {fmtTime(v.start)}
+                    {t('video.seekTo', { time: fmtTime(v.start) })}
                   </a>
                 ) : (
                   v.timestamp && <span className="seek" style={{ color: 'var(--text-faint)' }}>⏱ {v.timestamp}</span>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import * as api from '../lib/api'
 import type { CorpusSource } from '../lib/types'
 import { useStatus } from '../context/StatusContext'
@@ -14,6 +15,7 @@ function badgeType(s: CorpusSource): 'pdf' | 'img' | 'vid' {
 }
 
 export function SourcesView() {
+  const { t } = useTranslation()
   const { refresh } = useStatus()
   const { toast } = useUI()
   const [sources, setSources] = useState<CorpusSource[] | null>(null)
@@ -40,7 +42,7 @@ export function SourcesView() {
       await api.deleteSource(name)
       await load()
       refresh()
-      toast(`Removed ${name}`)
+      toast(t('sourcesView.removed', { name }))
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e))
     } finally {
@@ -52,13 +54,13 @@ export function SourcesView() {
   return (
     <div className="view-wrap">
       <div className="view-head">
-        <h2>Corpus Sources</h2>
-        <p>Every document indexed in the research corpus, with attribution metadata.</p>
+        <h2>{t('sourcesView.title')}</h2>
+        <p>{t('sourcesView.desc')}</p>
       </div>
 
       {error && <div className="empty-note" style={{ color: 'var(--bad)' }}>{error}</div>}
-      {!sources && !error && <div className="empty-note">Loading sources…</div>}
-      {sources && sources.length === 0 && <div className="empty-note">No sources indexed yet.</div>}
+      {!sources && !error && <div className="empty-note">{t('sourcesView.loading')}</div>}
+      {sources && sources.length === 0 && <div className="empty-note">{t('sourcesView.none')}</div>}
 
       {sources?.map((s) => {
         const sub = [s.author !== 'Unknown' ? s.author : null, s.source_type, s.institution]
@@ -71,12 +73,12 @@ export function SourcesView() {
               <div className="name">{s.source_name}</div>
               {sub && <div className="sub">{sub}</div>}
             </div>
-            <span className="cnt">{s.chunk_count} chunks</span>
+            <span className="cnt">{t('sourcesView.chunks', { count: s.chunk_count })}</span>
             <button
               className="src-del"
               onClick={() => setPending(s)}
-              aria-label={`Delete ${s.source_name}`}
-              title="Delete source"
+              aria-label={t('sourcesView.deleteAria', { name: s.source_name })}
+              title={t('sourcesView.deleteSource')}
             >
               <Trash2 />
             </button>
@@ -86,10 +88,10 @@ export function SourcesView() {
 
       <ConfirmDialog
         open={pending !== null}
-        title="Delete source"
+        title={t('sourcesView.confirmTitle')}
         message={
           pending
-            ? `Permanently remove “${pending.source_name}” (${pending.chunk_count} chunks)? This deletes its vectors and files and cannot be undone.`
+            ? t('sourcesView.confirmMsg', { name: pending.source_name, count: pending.chunk_count })
             : ''
         }
         busy={deleting}

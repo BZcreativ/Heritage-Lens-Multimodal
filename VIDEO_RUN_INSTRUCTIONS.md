@@ -4,7 +4,7 @@
 
 | File | Purpose |
 |------|---------|
-| `agent/video_ingest.py` | **Phase A**: Audio transcription (faster-whisper) → timestamped chunks → Qdrant. **Phase B**: Scene detection, frame captioning (GPT-4o vision), OCR, with deduplication. |
+| `agent/video_ingest.py` | **Phase A**: Audio transcription (faster-whisper) → timestamped chunks → Qdrant. **Phase B**: Scene detection, frame captioning (GPT-5.6 Luna Pro vision), OCR, with deduplication. |
 | `tests/test_video_ingest.py` | End-to-end verification: synthetic video → index → query → assert timestamp + metadata. |
 | `agent/ingest.py` (updated) | Wires `video_ingest.index_videos_in_corpus()` into the corpus rebuild flow. |
 | `agent/generator.py` (updated) | Layer 2 now shows `Timestamp` instead of `Page` for video chunks. Layer 3 analyzes `modality` counts as provenance signals. |
@@ -130,7 +130,7 @@ index_videos_in_corpus(
 
 Phase B requires:
 - `scenedetect` (Python package, listed in `requirements.txt`)
-- GPT-4o vision access (for captions) — uses existing OpenAI client
+- GPT-5.6 Luna Pro vision access (for captions) — uses existing OpenAI client
 - `pytesseract` (already installed) — for OCR
 
 The deduplication guard will automatically skip visual/OCR chunks that are >92% similar to existing audio transcript chunks in the same time window, preventing inflated source counts.

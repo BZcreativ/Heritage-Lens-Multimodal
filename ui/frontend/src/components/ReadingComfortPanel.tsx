@@ -1,15 +1,17 @@
 import { useEffect } from 'react'
 import { ALargeSmall, X, RotateCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useReading, type ReadingFont } from '../context/ReadingContext'
 import { useUI } from '../context/UIContext'
 
-const FONTS: { id: ReadingFont; name: string; family: string; badge?: 'sci' | 'pref'; badgeText?: string; note?: string }[] = [
-  { id: 'inter', name: 'Inter', family: "'Inter', sans-serif", note: 'Default' },
+const FONTS: { id: ReadingFont; name: string; family: string; badge?: 'sci' | 'pref'; badgeText?: string; note?: boolean }[] = [
+  { id: 'inter', name: 'Inter', family: "'Inter', sans-serif", note: true },
   { id: 'atkinson', name: 'Atkinson Hyperlegible', family: "'Atkinson Hyperlegible', sans-serif", badge: 'sci', badgeText: 'Sci ✓' },
   { id: 'opendyslexic', name: 'OpenDyslexic', family: "'OpenDyslexic', sans-serif", badge: 'pref', badgeText: 'Pref ⓘ' },
 ]
 
 export function ReadingComfortPanel() {
+  const { t } = useTranslation()
   const { reading, set, reset } = useReading()
   const { readingOpen, setReadingOpen } = useUI()
 
@@ -25,23 +27,23 @@ export function ReadingComfortPanel() {
   return (
     <>
       <div className={`scrim${readingOpen ? ' show' : ''}`} onClick={() => setReadingOpen(false)} />
-      <aside className={`rc${readingOpen ? ' show' : ''}`} role="dialog" aria-label="Reading comfort settings">
+      <aside className={`rc${readingOpen ? ' show' : ''}`} role="dialog" aria-label={t('reading.dialogAria')}>
         <div className="rc-head">
           <div className="rc-ico">
             <ALargeSmall />
           </div>
           <div>
-            <h2>Reading Comfort</h2>
-            <div className="rc-sub">Typeface applies app-wide · spacing to the answer</div>
+            <h2>{t('reading.title')}</h2>
+            <div className="rc-sub">{t('reading.sub')}</div>
           </div>
-          <button className="x" onClick={() => setReadingOpen(false)} aria-label="Close">
+          <button className="x" onClick={() => setReadingOpen(false)} aria-label={t('reading.close')}>
             <X />
           </button>
         </div>
 
         <div className="rc-body">
           <div className="rc-sec">
-            <div className="rc-l">Typeface</div>
+            <div className="rc-l">{t('reading.typeface')}</div>
             {FONTS.map((f) => (
               <button
                 key={f.id}
@@ -55,56 +57,56 @@ export function ReadingComfortPanel() {
                 {f.badge ? (
                   <span className={`rc-badge ${f.badge}`}>{f.badgeText}</span>
                 ) : (
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{f.note}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('reading.fontDefault')}</span>
                 )}
               </button>
             ))}
           </div>
 
           <div className="rc-sec">
-            <div className="rc-l">Spacing</div>
+            <div className="rc-l">{t('reading.spacing')}</div>
             <div className="rc-slider">
               <div className="rc-srow">
-                <span className="rc-sname">Letter spacing</span>
+                <span className="rc-sname">{t('reading.letterSpacing')}</span>
                 <span className="rc-sval">{reading.ls.toFixed(2)}em</span>
               </div>
               <input type="range" min={0} max={0.15} step={0.01} value={reading.ls}
-                onChange={(e) => set('ls', Number(e.target.value))} aria-label="Letter spacing" />
+                onChange={(e) => set('ls', Number(e.target.value))} aria-label={t('reading.letterSpacing')} />
             </div>
             <div className="rc-slider">
               <div className="rc-srow">
-                <span className="rc-sname">Line height</span>
+                <span className="rc-sname">{t('reading.lineHeight')}</span>
                 <span className="rc-sval">{reading.lh.toFixed(1)}</span>
               </div>
               <input type="range" min={1.2} max={2} step={0.1} value={reading.lh}
-                onChange={(e) => set('lh', Number(e.target.value))} aria-label="Line height" />
+                onChange={(e) => set('lh', Number(e.target.value))} aria-label={t('reading.lineHeight')} />
             </div>
             <div className="rc-slider">
               <div className="rc-srow">
-                <span className="rc-sname">Column width</span>
+                <span className="rc-sname">{t('reading.columnWidth')}</span>
                 <span className="rc-sval">{reading.width}ch</span>
               </div>
               <input type="range" min={50} max={100} step={2} value={reading.width}
-                onChange={(e) => set('width', Number(e.target.value))} aria-label="Column width" />
+                onChange={(e) => set('width', Number(e.target.value))} aria-label={t('reading.columnWidth')} />
             </div>
           </div>
 
           <div className="rc-sec">
-            <div className="rc-l">Presentation</div>
+            <div className="rc-l">{t('reading.presentation')}</div>
             <button className="rc-toggle" role="switch" aria-checked={reading.cream} onClick={() => set('cream', !reading.cream)}>
               <span className="sw" aria-hidden="true" aria-checked={reading.cream} />
-              <span>Cream background<span className="rc-tsub" style={{ display: 'block' }}>Solarized base3 · #FDF6E3</span></span>
+              <span>{t('reading.creamBg')}<span className="rc-tsub" style={{ display: 'block' }}>{t('reading.creamSub')}</span></span>
             </button>
             <button className="rc-toggle" role="switch" aria-checked={reading.ragged} onClick={() => set('ragged', !reading.ragged)}>
               <span className="sw" aria-hidden="true" aria-checked={reading.ragged} />
-              <span>Ragged-right<span className="rc-tsub" style={{ display: 'block' }}>Disable justification</span></span>
+              <span>{t('reading.ragged')}<span className="rc-tsub" style={{ display: 'block' }}>{t('reading.raggedSub')}</span></span>
             </button>
           </div>
         </div>
 
         <button className="rc-reset" onClick={reset}>
           <RotateCcw />
-          Reset to defaults
+          {t('reading.reset')}
         </button>
       </aside>
     </>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useUI } from '../context/UIContext'
 
 export function Lightbox() {
+  const { t } = useTranslation()
   const { lightbox, closeLightbox } = useUI()
   const [videoErr, setVideoErr] = useState(false)
 
@@ -32,7 +34,7 @@ export function Lightbox() {
 
   return (
     <div className="lightbox" onClick={(e) => { if (e.target === e.currentTarget) closeLightbox() }}>
-      <button className="lb-close" onClick={closeLightbox} aria-label="Close">
+      <button className="lb-close" onClick={closeLightbox} aria-label={t('lightbox.close')}>
         <X />
       </button>
       {lightbox.kind === 'image' ? (
@@ -47,7 +49,7 @@ export function Lightbox() {
         <>
           {videoErr ? (
             <div className="lb-video lb-video-err">
-              <p>This video can’t be played inline in your browser.</p>
+              <p>{t('lightbox.videoErr')}</p>
             </div>
           ) : (
             <video
@@ -70,7 +72,7 @@ export function Lightbox() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Open video in new tab ↗
+                {t('lightbox.openNewTab')}
               </a>
             )}
           </div>

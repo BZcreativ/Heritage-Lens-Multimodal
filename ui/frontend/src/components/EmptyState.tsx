@@ -1,14 +1,11 @@
+import { useTranslation } from 'react-i18next'
+
 export function EmptyState() {
+  const { t } = useTranslation()
   return (
     <section className="empty">
-      <h2>
-        Heritage Lens combines multiple sources and perspectives to give you
-        transparent, research-ready answers.
-      </h2>
-      <p>
-        Ask about the Mesoamerican corpus. Every answer cites its sources and tells you
-        what it can&rsquo;t know.
-      </p>
+      <h2>{t('empty.heading')}</h2>
+      <p>{t('empty.body')}</p>
     </section>
   )
 }

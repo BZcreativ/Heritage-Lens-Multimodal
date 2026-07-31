@@ -282,12 +282,12 @@ The following are explicitly NOT being built:
 
 | Component | Decision |
 |-----------|----------|
-| LLM | GPT-4o (OpenAI API) |
+| LLM | GPT-5.6 Luna Pro (OpenAI API via OpenRouter) |
 | Embeddings | OpenAI text-embedding-3-large |
 | RAG Pipeline | LlamaIndex (preferred) |
 | Vector DB | Qdrant on Vultr |
 | Agent Orchestration | openclaw-based (buzman) |
-| Judge Layer | Second GPT-4o call |
+| Judge Layer | Second GPT-5.6 Luna Pro call |
 | UI | Streamlit — 3-panel layout |
 | Infra | Vultr compute credits |
 

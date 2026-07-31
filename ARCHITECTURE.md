@@ -21,7 +21,7 @@ Heritage Lens is an **accountable, multimodal RAG agent** for specialised archiv
 | **2 — Source Grounding** | Attribution: source name, author, page **or timestamp**, type, institution, modality |
 | **3 — Epistemic Transparency** | Source bias, absences, interpretive limits, confidence — derived from real retrieved metadata |
 
-A **Judge** (second GPT-4o call) checks Layer 3 for specificity and triggers regeneration if it's generic.
+A **Judge** (second GPT-5.6 Luna Pro call) checks Layer 3 for specificity and triggers regeneration if it's generic.
 
 ---
 
@@ -89,8 +89,8 @@ Phase B is disabled in the corpus rebuild by default (`index_visual=False` in `i
 - **`agent/retriever.py`**
   - `retrieve_chunks(query)` → `heritage_lens_text` via LlamaIndex; balanced retrieval across sources; returns `text`, `metadata`, `score`.
   - `retrieve_images(query, media_type=…)` → embeds query with SigLIP text tower → `heritage_lens_images`; supports `source_filter` / `media_type` (`pdf_image`, `uploaded_image`, `video_frame`).
-- **`agent/generator.py`** — GPT-4o, JSON output. `analyze_metadata()` counts `source_type` / `institution` / `cultural_perspective` / **`modality`**. Video chunks render `Timestamp: {start}s–{end}s` + `Modality:` instead of `Page:`; Layer 3 treats modality as a provenance signal (audio = "narrated, not visually confirmed", etc.).
-- **`agent/judge.py`** — GPT-4o evaluates Layer 3 specificity → regenerate loop.
+- **`agent/generator.py`** — GPT-5.6 Luna Pro, JSON output. `analyze_metadata()` counts `source_type` / `institution` / `cultural_perspective` / **`modality`**. Video chunks render `Timestamp: {start}s–{end}s` + `Modality:` instead of `Page:`; Layer 3 treats modality as a provenance signal (audio = "narrated, not visually confirmed", etc.).
+- **`agent/judge.py`** — GPT-5.6 Luna Pro evaluates Layer 3 specificity → regenerate loop.
 - **`agent/pipeline.py`** — wires retrieve → generate → judge.
 
 ---
@@ -120,9 +120,9 @@ A modern web app that **replaces** Streamlit for day-to-day use (Streamlit stays
 | Image embeddings | `google/siglip2-base-patch16-224` (768d) |
 | Speech-to-text (default) | **Parakeet v3** (`nemo-parakeet-tdt-0.6b-v3`, int8 ONNX via `onnx-asr` + Silero VAD) — multilingual incl. it/es, ~1–1.5 GB RAM |
 | Speech-to-text (fallback) | `faster-whisper` `large-v3` (auto-used if Parakeet fails; `HL_ASR_BACKEND=whisper` to force) |
-| Frame captioning | **GLM-4.5V** via z.ai (`https://api.z.ai/api/paas/v4`), GPT-4o vision fallback |
+| Frame captioning | **GLM-4.5V** via z.ai (`https://api.z.ai/api/paas/v4`), GPT-5.6 Luna Pro vision fallback (`OPENAI_VISION_MODEL`) |
 | OCR | Tesseract (`eng+ita+spa`) |
-| Answer / Judge | OpenAI GPT-4o |
+| Answer / Judge | OpenAI GPT-5.6 Luna Pro (`OPENAI_MODEL`) |
 | Vector DB | Qdrant (`localhost:6333`, Docker) |
 | Cache | Redis (Docker) |
 

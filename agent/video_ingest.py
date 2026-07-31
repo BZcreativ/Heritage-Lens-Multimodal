@@ -29,6 +29,8 @@ from llama_index.core import Settings
 
 from faster_whisper import WhisperModel
 
+from agent.env_loader import get_llm_vision_model
+
 # ── Constants ────────────────────────────────────────────────────────────────
 EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
 # Overridable so tests can target a throwaway collection instead of production.
@@ -164,19 +166,29 @@ def _video_point_id(video_id: str, modality: str, start, end, text: str) -> str:
 
 # ── Audio extraction ──────────────────────────────────────────────────────────
 
-def extract_audio(video_path: str, output_dir: Optional[str] = None) -> str:
-    """Extract mono 16kHz WAV audio from video using ffmpeg."""
+def extract_audio(video_path: str, output_dir: Optional[str] = None) -> Optional[str]:
+    """Extract mono 16kHz WAV audio from video using ffmpeg.
+
+    Returns None if the video has no audio stream (e.g. a silent screen
+    recording) instead of raising, since that's an expected case, not a
+    failure.
+    """
     video_path = Path(video_path)
     if output_dir is None:
         output_dir = tempfile.gettempdir()
     audio_path = Path(output_dir) / f"{video_path.stem}_audio.wav"
 
-    subprocess.run([
+    result = subprocess.run([
         "ffmpeg", "-y",
         "-i", str(video_path),
         "-vn", "-acodec", "pcm_s16le", "-ar", str(AUDIO_SAMPLE_RATE), "-ac", "1",
         str(audio_path),
-    ], check=True, capture_output=True)
+    ], capture_output=True)
+    if result.returncode != 0:
+        stderr = result.stderr.decode(errors="ignore")
+        if "does not contain any stream" in stderr:
+            return None
+        raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
     return str(audio_path)
 
 
@@ -370,6 +382,9 @@ def index_video_audio(
 
     # 1. Extract audio
     audio_path = extract_audio(video_path)
+    if audio_path is None:
+        print(f"[video_ingest] No audio stream in {video_path}")
+        return 0
 
     # 2. Transcribe
     segments = transcribe_audio(audio_path)
@@ -405,7 +420,7 @@ CAPTION_PROMPT = (
 
 
 def _caption_frame(img, glm_client, openai_client) -> str:
-    """Caption one frame via GLM-4.5V (primary) then GPT-4o (fallback). Returns '' on failure."""
+    """Caption one frame via GLM-4.5V (primary) then OpenAI vision (fallback). Returns '' on failure."""
     import base64
     from io import BytesIO
     buf = BytesIO()
@@ -434,14 +449,14 @@ def _caption_frame(img, glm_client, openai_client) -> str:
     if openai_client:
         try:
             resp = openai_client.chat.completions.create(
-                model="gpt-4o",
+                model=get_llm_vision_model(),
                 messages=[{"role": "user", "content": content}],
                 max_tokens=150,
                 temperature=0.3,
             )
             return (resp.choices[0].message.content or "").strip()
         except Exception as e:
-            print(f"[video_ingest] GPT-4o caption failed: {e}")
+            print(f"[video_ingest] OpenAI caption failed: {e}")
     return ""
 
 
@@ -450,7 +465,7 @@ def index_video_visual(
     qdrant_client: QdrantClient,
     video_url: Optional[str] = None,
     use_glm_caption: bool = True,
-    use_gpt4o_caption: bool = False,
+    use_openai_caption: bool = False,
 ) -> Dict[str, int]:
     """
     Detect scenes, caption representative frames, OCR them, and upsert.
@@ -505,10 +520,10 @@ def index_video_visual(
     scene_list = sampled_scenes
 
     # 2. Load vision models (SigLIP for embeddings if needed, but we use all-MiniLM for text)
-    #    For captioning: GLM-4V (primary) or GPT-4o vision (fallback)
+    #    For captioning: GLM-4V (primary) or OpenAI vision (fallback)
     caption_model = None
     caption_processor = None
-    if not use_glm_caption and not use_gpt4o_caption:
+    if not use_glm_caption and not use_openai_caption:
         try:
             from transformers import AutoProcessor, AutoModelForVision2Seq
             caption_processor = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
@@ -531,15 +546,15 @@ def index_video_visual(
                 )
                 print("[video_ingest] GLM-4V client initialized")
             else:
-                print("[video_ingest] GLM_API_KEY not set; falling back to GPT-4o vision")
-                use_gpt4o_caption = True
+                print("[video_ingest] GLM_API_KEY not set; falling back to OpenAI vision")
+                use_openai_caption = True
         except Exception as e:
             print(f"[video_ingest] GLM client init failed: {e}")
-            use_gpt4o_caption = True
+            use_openai_caption = True
 
-    # 4. OpenAI client for GPT-4o vision (fallback)
+    # 4. OpenAI client for vision (fallback)
     openai_client = None
-    if use_gpt4o_caption:
+    if use_openai_caption:
         try:
             from openai import OpenAI
             openai_client = OpenAI()

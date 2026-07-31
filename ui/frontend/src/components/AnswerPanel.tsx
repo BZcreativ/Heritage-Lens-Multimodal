@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { Lightbulb } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useReading } from '../context/ReadingContext'
 import type { SearchResult } from '../lib/types'
 
@@ -36,6 +37,7 @@ function renderWithBackgroundTags(text: string): ReactNode[] {
 }
 
 export function AnswerPanel({ result }: { result: SearchResult }) {
+  const { t } = useTranslation()
   const { docStyle } = useReading()
   const grounded = result.grounded
 
@@ -45,16 +47,16 @@ export function AnswerPanel({ result }: { result: SearchResult }) {
         <div className="pico">
           <Lightbulb />
         </div>
-        <h2>The Answer</h2>
-        <span className="ptag">{grounded ? 'Grounded' : 'Ungrounded'}</span>
+        <h2>{t('answer.title')}</h2>
+        <span className="ptag">{grounded ? t('answer.grounded') : t('answer.ungrounded')}</span>
       </div>
       <div className="panel-body">
         <div className="answer-doc" style={docStyle}>
-          {result.answer ? renderWithBackgroundTags(result.answer) : <p>No answer was produced.</p>}
+          {result.answer ? renderWithBackgroundTags(result.answer) : <p>{t('answer.noAnswer')}</p>}
         </div>
         <div className="answer-foot">
           <span className="bg-tag">[ BACKGROUND — not retrieved ]</span>
-          <span className="note">= general knowledge, clearly separated from corpus-grounded claims.</span>
+          <span className="note">{t('answer.bgNote')}</span>
         </div>
       </div>
     </article>

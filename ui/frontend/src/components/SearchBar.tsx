@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { Search, ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useSearch } from '../context/SearchContext'
 
 export function SearchBar() {
+  const { t } = useTranslation()
   const { query, setQuery, runSearch, state } = useSearch()
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -30,7 +32,7 @@ export function SearchBar() {
           ref={inputRef}
           type="text"
           value={query}
-          placeholder="Ask a research question…"
+          placeholder={t('search.placeholder')}
           autoComplete="off"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -44,7 +46,7 @@ export function SearchBar() {
         <span className="kbd">⌘ ⏎</span>
         <button className="search-btn" onClick={submit} disabled={state === 'loading' || !query.trim()}>
           <ArrowRight />
-          Search
+          {t('search.button')}
         </button>
       </div>
     </div>
