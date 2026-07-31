@@ -192,6 +192,16 @@ body.rail-collapsed .rail { display: none; }
 .icon-btn.on { color: var(--answer); border-color: color-mix(in oklab, var(--answer) 35%, transparent); background: var(--answer-bg); }
 .topbar .divline { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
 
+/* language picker — a compact globe+code trigger that belongs in the icon-btn row */
+.lang-menu { position: relative; }
+.lang-trigger { width: auto; gap: 6px; padding: 0 9px; }
+.lang-trigger .lang-code { font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+.lang-pop { position: absolute; top: calc(100% + 6px); right: 0; min-width: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-lg); padding: 5px; z-index: 40; display: flex; flex-direction: column; gap: 2px; }
+.lang-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border-radius: var(--r-sm); border: none; background: none; color: var(--text-soft); font-family: inherit; font-size: 13.5px; text-align: left; transition: background .15s, color .15s; }
+.lang-opt:hover { background: var(--surface-2); color: var(--text); }
+.lang-opt.active { color: var(--text); font-weight: 500; }
+.lang-opt svg { width: 15px; height: 15px; color: var(--answer); flex: none; }
+
 /* ============ SEARCH ============ */
 .content { padding: 26px 30px 36px; flex: 1; min-width: 0; }
 .searchwrap { width: 100%; max-width: min(1500px, 100%); margin: 0 auto; }

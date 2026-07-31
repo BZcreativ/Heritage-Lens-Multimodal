@@ -1,4 +1,5 @@
 import { MessageSquare, BookOpen, Upload, Activity, Search, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useNav, type NavView } from '../context/NavContext'
 import { useSearch } from '../context/SearchContext'
 import { useStatus } from '../context/StatusContext'
@@ -6,16 +7,23 @@ import { useTheme } from '../context/ThemeContext'
 import { useUI } from '../context/UIContext'
 import type { AnswerMode } from '../lib/types'
 
-const NAV: { id: NavView; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'ask', label: 'Ask', icon: MessageSquare },
-  { id: 'sources', label: 'Sources', icon: BookOpen },
-  { id: 'uploads', label: 'Uploads', icon: Upload },
-  { id: 'sessions', label: 'Sessions', icon: Activity },
+const NAV: { id: NavView; icon: typeof MessageSquare }[] = [
+  { id: 'ask', icon: MessageSquare },
+  { id: 'sources', icon: BookOpen },
+  { id: 'uploads', icon: Upload },
+  { id: 'sessions', icon: Activity },
 ]
 
+// AnswerMode values are sent to the backend verbatim; only the display label is localised.
 const MODES: AnswerMode[] = ['Strict Corpus-Only', 'Corpus + Background', 'Exploratory']
+const MODE_KEY: Record<AnswerMode, string> = {
+  'Strict Corpus-Only': 'sidebar.modeStrict',
+  'Corpus + Background': 'sidebar.modeBackground',
+  Exploratory: 'sidebar.modeExploratory',
+}
 
 export function Sidebar() {
+  const { t } = useTranslation()
   const { view, setView } = useNav()
   const { mode, setMode } = useSearch()
   const { status } = useStatus()
@@ -39,13 +47,13 @@ export function Sidebar() {
         </div>
         <div>
           <h1>Heritage Lens</h1>
-          <div className="sub">Multimodal RAG</div>
+          <div className="sub">{t('sidebar.brandSub')}</div>
         </div>
       </div>
 
       <nav className="side-sec">
-        <div className="side-label">Explore</div>
-        {NAV.map(({ id, label, icon: Icon }) => (
+        <div className="side-label">{t('sidebar.explore')}</div>
+        {NAV.map(({ id, icon: Icon }) => (
           <button
             key={id}
             className={`nav-item${view === id ? ' active' : ''}`}
@@ -53,7 +61,7 @@ export function Sidebar() {
             aria-current={view === id ? 'page' : undefined}
           >
             <Icon />
-            {label}
+            {t(`nav.${id}`)}
             {id === 'sources' && status && (
               <span className="count">{status.source_count}</span>
             )}
@@ -62,36 +70,33 @@ export function Sidebar() {
       </nav>
 
       <div className="side-sec">
-        <div className="side-label">Answer Settings</div>
-        <div className="field-label">Answer Mode</div>
+        <div className="side-label">{t('sidebar.answerSettings')}</div>
+        <div className="field-label">{t('sidebar.answerMode')}</div>
         <select
           className="select"
-          aria-label="Answer mode"
+          aria-label={t('sidebar.answerMode')}
           value={mode}
           onChange={(e) => setMode(e.target.value as AnswerMode)}
         >
           {MODES.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {t(MODE_KEY[m])}
             </option>
           ))}
         </select>
         <div className="switch-row" style={{ marginTop: 6 }}>
-          <button className="sw" role="switch" aria-checked={showLayers} aria-label="Show all transparency layers" onClick={toggleLayers} />
-          Show all layers
+          <button className="sw" role="switch" aria-checked={showLayers} aria-label={t('sidebar.showAllLayers')} onClick={toggleLayers} />
+          {t('sidebar.showAllLayers')}
         </div>
         <div className="side-note">
-          Answers are grounded in your indexed corpus. Background knowledge is tagged,
-          never silently mixed in.
+          {t('sidebar.sideNote')}
         </div>
       </div>
 
       <div className="side-sec">
-        <div className="side-label">About</div>
+        <div className="side-label">{t('sidebar.about')}</div>
         <p className="about-p">
-          Heritage Lens retrieves across text, images, and video, then attributes every
-          claim and surfaces what it cannot know. Built for accountable specialised
-          research.
+          {t('sidebar.aboutText')}
         </p>
       </div>
 
@@ -100,9 +105,9 @@ export function Sidebar() {
         <div className="switch-row" style={{ justifyContent: 'space-between' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <Sun size={16} style={{ color: 'var(--text-soft)' }} />
-            Dark mode
+            {t('sidebar.darkMode')}
           </span>
-          <button className="sw" role="switch" aria-checked={dark} aria-label="Toggle dark mode" onClick={toggle} />
+          <button className="sw" role="switch" aria-checked={dark} aria-label={t('topbar.toggleDarkMode')} onClick={toggle} />
         </div>
       </div>
     </aside>

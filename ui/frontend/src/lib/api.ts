@@ -52,12 +52,13 @@ export async function deleteSource(name: string): Promise<DeleteSourceResponse> 
 export async function search(
   query: string,
   mode: AnswerMode = 'Strict Corpus-Only',
+  language?: string,
   signal?: AbortSignal,
 ): Promise<SearchResult> {
   const res = await fetch(`${BASE}/search`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query, mode }),
+    body: JSON.stringify({ query, mode, language }),
     signal,
   })
   return asJson<SearchResult>(res)

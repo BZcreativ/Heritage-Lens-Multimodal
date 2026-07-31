@@ -101,17 +101,17 @@ def _video_poster_url(video_id: str | None, start: float | None) -> str | None:
     return None
 
 
-def _run_search(query: str, mode: str = "Strict Corpus-Only") -> SearchResult:
+def _run_search(query: str, mode: str = "Strict Corpus-Only", language: str | None = None) -> SearchResult:
     """Blocking: call the existing pipeline and shape its output.
 
     `mode` is the UI's Answer Mode select; it is threaded into the pipeline to
     control corpus-grounding strictness, retrieval breadth, and temperature, and
-    is echoed back in meta.
+    is echoed back in meta. `language` forces the answer language (None = auto-detect).
     """
     from agent.pipeline import run_pipeline  # imported lazily (heavy deps)
 
     t0 = time.perf_counter()
-    payload = run_pipeline(query, mode=mode)
+    payload = run_pipeline(query, mode=mode, language=language)
     elapsed = time.perf_counter() - t0
 
     chunks = payload.get("retrieved_chunks", []) or []
@@ -141,6 +141,7 @@ def _run_search(query: str, mode: str = "Strict Corpus-Only") -> SearchResult:
             elapsed_seconds=round(elapsed, 2),
             image_keyword=payload.get("layer_4_image_keyword"),
             mode=mode,
+            language=language,
         ),
     )
 
@@ -151,7 +152,7 @@ async def search(req: SearchRequest) -> SearchResult:
     if not query:
         raise HTTPException(status_code=422, detail="query must not be empty")
     try:
-        return await asyncio.to_thread(_run_search, query, req.mode)
+        return await asyncio.to_thread(_run_search, query, req.mode, req.language)
     except Exception as e:  # surface pipeline errors as 500 with a message
         raise HTTPException(status_code=500, detail=f"pipeline error: {e}") from e
 

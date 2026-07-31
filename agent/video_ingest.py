@@ -166,19 +166,29 @@ def _video_point_id(video_id: str, modality: str, start, end, text: str) -> str:
 
 # ── Audio extraction ──────────────────────────────────────────────────────────
 
-def extract_audio(video_path: str, output_dir: Optional[str] = None) -> str:
-    """Extract mono 16kHz WAV audio from video using ffmpeg."""
+def extract_audio(video_path: str, output_dir: Optional[str] = None) -> Optional[str]:
+    """Extract mono 16kHz WAV audio from video using ffmpeg.
+
+    Returns None if the video has no audio stream (e.g. a silent screen
+    recording) instead of raising, since that's an expected case, not a
+    failure.
+    """
     video_path = Path(video_path)
     if output_dir is None:
         output_dir = tempfile.gettempdir()
     audio_path = Path(output_dir) / f"{video_path.stem}_audio.wav"
 
-    subprocess.run([
+    result = subprocess.run([
         "ffmpeg", "-y",
         "-i", str(video_path),
         "-vn", "-acodec", "pcm_s16le", "-ar", str(AUDIO_SAMPLE_RATE), "-ac", "1",
         str(audio_path),
-    ], check=True, capture_output=True)
+    ], capture_output=True)
+    if result.returncode != 0:
+        stderr = result.stderr.decode(errors="ignore")
+        if "does not contain any stream" in stderr:
+            return None
+        raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
     return str(audio_path)
 
 
@@ -372,6 +382,9 @@ def index_video_audio(
 
     # 1. Extract audio
     audio_path = extract_audio(video_path)
+    if audio_path is None:
+        print(f"[video_ingest] No audio stream in {video_path}")
+        return 0
 
     # 2. Transcribe
     segments = transcribe_audio(audio_path)

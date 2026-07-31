@@ -10,7 +10,7 @@ MODE_TOP_K = {
     "Exploratory": 25,
 }
 
-def run_pipeline(query: str, max_retries: int = 2, mode: str = "Strict Corpus-Only") -> dict:
+def run_pipeline(query: str, max_retries: int = 2, mode: str = "Strict Corpus-Only", language: str | None = None) -> dict:
     """
     Orchestrates the entire sequence:
     1. Retrieve text chunks & metadata
@@ -21,6 +21,7 @@ def run_pipeline(query: str, max_retries: int = 2, mode: str = "Strict Corpus-On
 
     `mode` is the UI Answer Mode; it controls retrieval breadth here and is passed
     to the generator to control corpus-grounding strictness and temperature.
+    `language` forces the answer language (None = auto-detect from the query).
     """
     top_k = MODE_TOP_K.get(mode, 15)
     print(f"Retrieving chunks for query: '{query}' (mode={mode}, top_k={top_k})")
@@ -36,7 +37,7 @@ def run_pipeline(query: str, max_retries: int = 2, mode: str = "Strict Corpus-On
 
     for attempt in range(max_retries):
         print(f"LLM Processing 3-Layer Response (Attempt {attempt+1}/{max_retries})...")
-        payload = generate_response(query, chunks, rejection_feedback, mode=mode)
+        payload = generate_response(query, chunks, rejection_feedback, mode=mode, language=language)
 
         layer_3 = payload.get("layer_3_transparency", "")
 

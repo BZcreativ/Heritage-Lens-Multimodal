@@ -1,4 +1,6 @@
 import { Share2, Download } from 'lucide-react'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { useSearch } from '../context/SearchContext'
 import { useUI } from '../context/UIContext'
 import { AnswerPanel } from './AnswerPanel'
@@ -7,13 +9,13 @@ import { VideoGallery } from './VideoGallery'
 import { ImageGallery } from './ImageGallery'
 import type { SearchResult } from '../lib/types'
 
-function metaLine(r: SearchResult): string {
+function metaLine(r: SearchResult, t: TFunction): string {
   const m = r.meta
   const parts = [
-    `${m.source_count} source${m.source_count === 1 ? '' : 's'}`,
-    `${m.video_count} video chunk${m.video_count === 1 ? '' : 's'}`,
-    `${m.image_count} image${m.image_count === 1 ? '' : 's'}`,
-    `${m.elapsed_seconds.toFixed(1)}s`,
+    t('results.sources', { count: m.source_count }),
+    t('results.videos', { count: m.video_count }),
+    t('results.images', { count: m.image_count }),
+    t('results.seconds', { seconds: m.elapsed_seconds.toFixed(1) }),
   ]
   return parts.join(' · ')
 }
@@ -28,33 +30,34 @@ function downloadFile(name: string, content: string, type: string) {
   URL.revokeObjectURL(url)
 }
 
-function toMarkdown(r: SearchResult): string {
-  const lines = [`# ${r.query}`, '', '## Answer', '', r.answer, '', '## Sources', '']
+function toMarkdown(r: SearchResult, t: TFunction): string {
+  const lines = [`# ${r.query}`, '', `## ${t('results.mdAnswer')}`, '', r.answer, '', `## ${t('results.mdSources')}`, '']
   r.sources.forEach((s) => lines.push(`${s.n}. **${s.title}** — ${s.subtitle}`))
-  lines.push('', '## What the system does not know', '', r.epistemic.raw)
+  lines.push('', `## ${t('results.mdUnknown')}`, '', r.epistemic.raw)
   return lines.join('\n')
 }
 
 export function Results({ result }: { result: SearchResult }) {
+  const { t } = useTranslation()
   const { error } = useSearch()
   const { toast, showLayers } = useUI()
 
   const share = () => {
     const url = `${location.origin}${location.pathname}#q=${encodeURIComponent(result.query)}`
     navigator.clipboard?.writeText(url).then(
-      () => toast('Share link copied to clipboard'),
-      () => toast('Copy failed'),
+      () => toast(t('results.shareCopied')),
+      () => toast(t('results.copyFailed')),
     )
   }
 
   const slug = result.query.slice(0, 40).replace(/[^\w]+/g, '_') || 'heritage_lens'
   const exportMd = () => {
-    downloadFile(`${slug}.md`, toMarkdown(result), 'text/markdown')
-    toast('Exported answer + sources as Markdown')
+    downloadFile(`${slug}.md`, toMarkdown(result, t), 'text/markdown')
+    toast(t('results.exportedMd'))
   }
   const exportJson = () => {
     downloadFile(`${slug}.json`, JSON.stringify(result, null, 2), 'application/json')
-    toast('Exported result as JSON')
+    toast(t('results.exportedJson'))
   }
 
   return (
@@ -62,18 +65,18 @@ export function Results({ result }: { result: SearchResult }) {
       <div className="query-recap">
         <div>
           <div className="q">{result.query}</div>
-          <div className="meta">{metaLine(result)}</div>
+          <div className="meta">{metaLine(result, t)}</div>
         </div>
         <div className="recap-actions">
           <button className="ghost-btn" onClick={share}>
             <Share2 />
-            Share query
+            {t('results.shareQuery')}
           </button>
-          <button className="ghost-btn" onClick={exportMd} title="Export as Markdown">
+          <button className="ghost-btn" onClick={exportMd} title={t('results.exportMarkdown')}>
             <Download />
-            Export
+            {t('results.export')}
           </button>
-          <button className="ghost-btn" onClick={exportJson} title="Export as JSON">
+          <button className="ghost-btn" onClick={exportJson} title={t('results.exportJson')}>
             JSON
           </button>
         </div>

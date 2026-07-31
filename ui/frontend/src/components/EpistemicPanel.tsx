@@ -1,7 +1,8 @@
 import { AlertTriangle, FileWarning, Search, Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Epistemic } from '../lib/types'
 
-const LEVEL_LABEL: Record<string, string> = { low: 'Low', moderate: 'Moderate', high: 'High' }
+const LEVEL_KEY: Record<string, string> = { low: 'epistemic.levelLow', moderate: 'epistemic.levelModerate', high: 'epistemic.levelHigh' }
 
 function ConfidenceBar({ segments }: { segments: number }) {
   return (
@@ -14,6 +15,7 @@ function ConfidenceBar({ segments }: { segments: number }) {
 }
 
 export function EpistemicPanel({ epistemic }: { epistemic: Epistemic }) {
+  const { t } = useTranslation()
   const c = epistemic.confidence
   return (
     <article className="panel epi">
@@ -21,40 +23,40 @@ export function EpistemicPanel({ epistemic }: { epistemic: Epistemic }) {
         <div className="pico">
           <AlertTriangle />
         </div>
-        <h2>What the System Doesn&rsquo;t Know</h2>
-        <span className="ptag">Epistemic</span>
+        <h2>{t('epistemic.title')}</h2>
+        <span className="ptag">{t('epistemic.tag')}</span>
       </div>
       <div className="panel-body">
         <div className="epi-grid">
           <div className="epi-card bias">
             <div className="eh">
               <AlertTriangle />
-              Source Bias
+              {t('epistemic.sourceBias')}
             </div>
-            <p>{epistemic.source_bias || 'No specific source-bias notes for this query.'}</p>
+            <p>{epistemic.source_bias || t('epistemic.noBias')}</p>
           </div>
           <div className="epi-card abs">
             <div className="eh">
               <FileWarning />
-              Absences
+              {t('epistemic.absences')}
             </div>
-            <p>{epistemic.absences || 'No specific absences flagged for this query.'}</p>
+            <p>{epistemic.absences || t('epistemic.noAbsences')}</p>
           </div>
           <div className="epi-card lim">
             <div className="eh">
               <Search />
-              Interpretive Limits
+              {t('epistemic.interpretiveLimits')}
             </div>
-            <p>{epistemic.interpretive_limits || 'No specific interpretive limits flagged.'}</p>
+            <p>{epistemic.interpretive_limits || t('epistemic.noLimits')}</p>
           </div>
           <div className="epi-card conf">
             <div className="eh">
               <Check />
-              Confidence
+              {t('epistemic.confidence')}
             </div>
             <ConfidenceBar segments={c.segments} />
             <div className="conf-row">
-              <span className="conf-label">{LEVEL_LABEL[c.level] ?? 'Moderate'}</span>
+              <span className="conf-label">{t(LEVEL_KEY[c.level] ?? 'epistemic.levelModerate')}</span>
               {c.note && <span className="conf-pct">{c.note}</span>}
             </div>
           </div>

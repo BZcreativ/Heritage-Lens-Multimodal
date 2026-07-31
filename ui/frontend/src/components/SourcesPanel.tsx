@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BookOpen, ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { SourceItem } from '../lib/types'
 
 function SourceRow({ src }: { src: SourceItem }) {
@@ -31,17 +32,18 @@ function SourceRow({ src }: { src: SourceItem }) {
 }
 
 export function SourcesPanel({ sources }: { sources: SourceItem[] }) {
+  const { t } = useTranslation()
   return (
     <article className="panel sources">
       <div className="panel-head">
         <div className="pico">
           <BookOpen />
         </div>
-        <h2>Sources</h2>
-        <span className="ptag">{sources.length} cited</span>
+        <h2>{t('sources.title')}</h2>
+        <span className="ptag">{t('sources.cited', { count: sources.length })}</span>
       </div>
       <div className="panel-body">
-        {sources.length === 0 && <p className="empty-note">No sources were retrieved for this query.</p>}
+        {sources.length === 0 && <p className="empty-note">{t('sources.none')}</p>}
         {sources.map((s) => (
           <SourceRow key={`${s.n}-${s.title}`} src={s} />
         ))}

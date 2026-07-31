@@ -59,6 +59,7 @@ class SearchMeta(BaseModel):
     elapsed_seconds: float = 0.0
     image_keyword: Optional[str] = None
     mode: Optional[str] = None        # echoes SearchRequest.mode (no-op upstream for now)
+    language: Optional[str] = None    # echoes SearchRequest.language (None = auto-detect)
 
 
 class SearchResult(BaseModel):
@@ -80,6 +81,9 @@ class SearchRequest(BaseModel):
     # agent/* must not be modified. Wire to real behaviour later if generator.py grows
     # a mode parameter.
     mode: str = "Strict Corpus-Only"
+    # Force the generated answer into this language ("English"/"Italian"/"Spanish"/
+    # "French"). None = auto-detect from the query (legacy behaviour).
+    language: Optional[str] = None
 
 
 # ---------------------------------------------------------------- status ----

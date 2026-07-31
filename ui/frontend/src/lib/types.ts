@@ -53,6 +53,7 @@ export interface SearchMeta {
   elapsed_seconds: number
   image_keyword: string | null
   mode: string | null
+  language: string | null
 }
 
 export interface SearchResult {

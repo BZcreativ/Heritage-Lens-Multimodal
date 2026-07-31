@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import * as api from '../lib/api'
+import i18n, { backendLanguage } from '../lib/i18n'
 import { usePersistedState } from '../lib/usePersistedState'
 import type { AnswerMode, SearchResult } from '../lib/types'
 
@@ -32,6 +33,10 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const abortRef = useRef<AbortController | null>(null)
   const modeRef = useRef(mode)
   modeRef.current = mode
+  // Track the last submitted query + current state so a language switch can re-run it.
+  const lastQueryRef = useRef('')
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   const pushHistory = useCallback(
     (q: string) => setHistory((prev) => [q, ...prev.filter((h) => h !== q)].slice(0, HISTORY_CAP)),
@@ -50,9 +55,10 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       setState('loading')
       setError(null)
       pushHistory(q)
+      lastQueryRef.current = q
 
       api
-        .search(q, modeRef.current, ctrl.signal)
+        .search(q, modeRef.current, backendLanguage(), ctrl.signal)
         .then((res) => {
           if (ctrl.signal.aborted) return
           setResult(res)
@@ -74,6 +80,18 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setQuery('')
     setState('empty')
   }, [])
+
+  // When the UI language changes, re-run the active query so the answer follows
+  // the selection (the answer language is forced server-side via backendLanguage()).
+  useEffect(() => {
+    const onLang = () => {
+      if (stateRef.current === 'results' && lastQueryRef.current) runSearch(lastQueryRef.current)
+    }
+    i18n.on('languageChanged', onLang)
+    return () => {
+      i18n.off('languageChanged', onLang)
+    }
+  }, [runSearch])
 
   // On first load, auto-run a query passed via the #q= share hash.
   useEffect(() => {
