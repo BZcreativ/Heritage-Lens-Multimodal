@@ -23,13 +23,13 @@
 - `retrieve_images()` queries `heritage_lens_images` using SigLIP text embedding of the query. Supports `source_filter` and `media_type` filters.
 
 ### Generation (`agent/generator.py`)
-- Calls OpenAI GPT-4o with a system prompt.
+- Calls OpenAI GPT-5.6 Luna Pro with a system prompt.
 - **Layer 2** reads metadata: `source_name`, `author`, `page_number`, `source_type`, `institution`, `cultural_perspective`.
 - **Layer 3** reads metadata aggregates: counts of `source_type`, `institution`, `cultural_perspective`.
 - Custom hardcoded knowledge for the two known PDFs is injected.
 
 ### Judge (`agent/judge.py`)
-- Separate GPT-4o call evaluating Layer 3 specificity.
+- Separate GPT-5.6 Luna Pro call evaluating Layer 3 specificity.
 - Returns `is_valid` + `feedback` for regeneration loop.
 
 ### UI (`ui/app.py`)
@@ -71,7 +71,7 @@
 2. **Text and images are in separate vector spaces** (384 vs 768). The user's request says "Embed transcript + caption + OCR chunks with the SAME embedder the text pipeline uses, into the SAME Qdrant collection." This is the correct approach — we must **not** use SigLIP for video-derived text. We must use `all-MiniLM-L6-v2` → 384-dim → `heritage_lens_text`.
 3. **The generator expects `page_number` for citations**. For video chunks, we should map `start`/`end` seconds into a human-readable timestamp field, but keep `page_number` absent or use it for a fallback. The generator's prompt says "You MUST securely cite the specific 'Page' provided" — for video, we need to adapt the prompt to also cite `timestamp` when `modality` is video-derived.
 4. **Layer 3 currently analyzes `source_type`, `institution`, `cultural_perspective`**. Adding `modality` as a new metadata field will let Layer 3 distinguish "narrated, not visually confirmed" — this is a provenance signal. We need to add `modality` to the metadata analysis and the system prompt.
-5. **No vision captioning model is currently wired in**. The project has SigLIP for embedding, but not for generating captions. The simplest and most consistent approach is to use the **existing OpenAI GPT-4o client** (already used for synthesis) for frame captioning, since it has vision capabilities. Alternatively, we can use a local VLM if desired. I will note this as a decision point.
+5. **No vision captioning model is currently wired in**. The project has SigLIP for embedding, but not for generating captions. The simplest and most consistent approach is to use the **existing OpenAI GPT-5.6 Luna Pro client** (already used for synthesis) for frame captioning, since it has vision capabilities. Alternatively, we can use a local VLM if desired. I will note this as a decision point.
 
 ---
 
@@ -124,7 +124,7 @@
 2. **Extend `agent/video_ingest.py`**:
    - `detect_scenes(video_path) -> list[(start_sec, end_sec)]` using PySceneDetect.
    - `extract_frame_at(video_path, timestamp_sec) -> image_path`.
-   - `caption_frame(image_path) -> caption` using GPT-4o vision (reuses existing OpenAI client) or a local VLM.
+   - `caption_frame(image_path) -> caption` using GPT-5.6 Luna Pro vision (reuses existing OpenAI client) or a local VLM.
    - `ocr_frame(image_path) -> text` using pytesseract.
    - Create chunks for each scene:
      - `modality="visual_caption"` with the caption text
@@ -156,7 +156,7 @@
 
 1. **Transcription library**: `faster-whisper` is lighter and sufficient for segment-level timestamps. `whisperx` adds word-level alignment and speaker diarization but is heavier and requires `torchaudio` + `pytorch`. Recommend `faster-whisper` for Phase A. **Ask user before installing.**
 2. **Vision captioning**: The project does not currently have a local VLM for captioning. Options:
-   - **A**: Use existing OpenAI GPT-4o vision API (simplest, consistent with current stack, no new deps).
+   - **A**: Use existing OpenAI GPT-5.6 Luna Pro vision API (simplest, consistent with current stack, no new deps).
    - **B**: Add a local model like `Salesforce/blip-image-captioning-base` or a small Llava variant (adds dependencies, runs offline).
    Recommend **A** for Phase B, but will ask.
 3. **Qdrant collection**: `heritage_lens_text` is already 384-dim COSINE. No collection config changes needed. **No action required.**

@@ -2,7 +2,7 @@ import os
 import json
 from collections import Counter
 from openai import OpenAI
-from agent.env_loader import load_env
+from agent.env_loader import load_env, get_llm_model
 
 load_env()
 # client initialization moved inside generate_response to prevent early failure
@@ -83,7 +83,7 @@ MODE_TEMPERATURE = {
 
 def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedback: str = None, mode: str = "Strict Corpus-Only") -> dict:
     """
-    Generates the three-layer answer required by the Heritage Lens Agent using GPT-4o.
+    Generates the three-layer answer required by the Heritage Lens Agent using the configured OpenAI model (OPENAI_MODEL).
     Accepts an optional `rejection_feedback` to correct course if Judge evaluates negatively.
     `mode` is the UI Answer Mode and controls corpus-grounding strictness and temperature.
     """
@@ -194,7 +194,7 @@ You MUST output your entire response in the EXACT SAME LANGUAGE as the user's qu
     system_prompt += MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["Strict Corpus-Only"])
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=get_llm_model(),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query}

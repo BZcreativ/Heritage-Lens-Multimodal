@@ -15,7 +15,7 @@ Every response contains three layers:
 | **2 — Source Grounding** | Full attribution: source name, author, page **or timestamp**, type, institution, modality |
 | **3 — Epistemic Transparency** | Source bias, knowledge absences, interpretive limits, confidence — tied to the actual retrieved metadata, not generic disclaimers |
 
-A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates it if it's generic. When retrieval is weak, the system says so and expands the absences section rather than confabulating. **Failure is a feature.**
+A **Judge** (second GPT-5.6 Luna Pro call) checks Layer 3 for specificity and regenerates it if it's generic. When retrieval is weak, the system says so and expands the absences section rather than confabulating. **Failure is a feature.**
 
 ---
 
@@ -41,11 +41,11 @@ A **Judge** (second GPT-4o call) checks Layer 3 for specificity and regenerates 
 
 | Component | Tool |
 |-----------|------|
-| Answers + Judge | OpenAI GPT-4o |
+| Answers + Judge | OpenAI GPT-5.6 Luna Pro |
 | Text embeddings | `all-MiniLM-L6-v2` (384-dim) |
 | Image embeddings | `google/siglip2-base-patch16-224` (768-dim) |
 | Speech-to-text | **Parakeet v3** (`nemo-parakeet-tdt-0.6b-v3` int8, via `onnx-asr` + Silero VAD) — default; `faster-whisper` fallback (`HL_ASR_BACKEND`) |
-| Frame captioning | **GLM-4.5V** via z.ai (GPT-4o vision fallback) |
+| Frame captioning | **GLM-4.5V** via z.ai (GPT-5.6 Luna Pro vision fallback) |
 | OCR | Tesseract (`eng+ita+spa`) |
 | RAG pipeline | LlamaIndex |
 | Vector DB | Qdrant (Docker, `localhost:6333`) |
@@ -80,7 +80,7 @@ Layer 3 only works if this metadata is injected into the retrieved context — r
 ```
 User query
   → retrieve top-k chunks (with metadata, balanced across sources)
-  → GPT-4o generates 3-layer response
+  → GPT-5.6 Luna Pro generates 3-layer response
   → Judge evaluates Layer 3 (VALID / WEAK) → regenerate if WEAK
   → Streamlit 3-panel UI  (+ Video Evidence gallery for video-derived results)
 ```

@@ -1,6 +1,6 @@
 import json
 from openai import OpenAI
-from agent.env_loader import load_env
+from agent.env_loader import load_env, get_llm_model
 
 load_env()
 # client initialization moved inside evaluate_layer_3 to prevent early failure
@@ -35,7 +35,7 @@ Output a JSON object with:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=get_llm_model(),
         messages=[{"role": "system", "content": prompt}],
         response_format={"type": "json_object"},
         temperature=0.1,
