@@ -11,11 +11,11 @@ const sessionStart = new Date().toLocaleString('en-GB', {
 export function RightRail() {
   const { result, history, mode, runSearch } = useSearch()
   const { status } = useStatus()
-  const { sessionMasked, toggleSessionMask, toast } = useUI()
+  const { sessionMasked, toggleSessionMask, toast, showLayers } = useUI()
 
   return (
     <aside className="rail">
-      {result && <EpistemicPanel epistemic={result.epistemic} />}
+      {result && showLayers && <EpistemicPanel epistemic={result.epistemic} />}
 
       <div>
         <div
@@ -39,7 +39,7 @@ export function RightRail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 8 }}>
             <div className="rail-row"><span>Started</span><b>{sessionStart}</b></div>
             <div className="rail-row"><span>Mode</span><b>{mode}</b></div>
-            <div className="rail-row"><span>Sources Indexed</span><b>{status?.corpus_pdfs ?? '—'}</b></div>
+            <div className="rail-row"><span>Sources Indexed</span><b>{status?.source_count ?? '—'}</b></div>
             <div className="rail-row"><span>Exchanges</span><b>{history.length}</b></div>
           </div>
           <button

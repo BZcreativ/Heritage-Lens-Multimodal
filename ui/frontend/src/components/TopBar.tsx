@@ -18,7 +18,7 @@ export function TopBar() {
   const { view } = useNav()
 
   const ok = status?.qdrant_ok
-  const sourceCount = status?.corpus_pdfs ?? 0
+  const sourceCount = status?.source_count ?? 0
 
   return (
     <div className="topbar">

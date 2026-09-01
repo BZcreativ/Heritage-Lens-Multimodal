@@ -145,7 +145,7 @@ def initialize_vector_db():
 
     # ── Video text indexing (audio transcripts + visual captions/OCR) ──
     print("=== INDEXING VIDEO TEXT DERIVATIVES ===")
-    index_videos_in_corpus(corpus_dir, client, index_audio=True, index_visual=False)
+    index_videos_in_corpus(corpus_dir, client, index_audio=True, index_visual=True)
     print("=== VIDEO TEXT INDEXING COMPLETE ===")
 
 if __name__ == "__main__":

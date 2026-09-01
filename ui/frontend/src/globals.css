@@ -340,6 +340,13 @@ body.rail-collapsed .rail { display: none; }
 .vid-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
 .ph { position: relative; background: var(--surface-2); background-image: repeating-linear-gradient(45deg, color-mix(in oklab, var(--text) 5%, transparent) 0 8px, transparent 8px 16px); display: grid; place-items: center; color: var(--text-faint); font-family: ui-monospace, Menlo, monospace; font-size: 11px; text-align: center; padding: 6px; }
 .vid-card .ph { height: 104px; align-items: flex-end; justify-content: flex-start; }
+button.ph { border: 0; font: inherit; width: 100%; cursor: pointer; }
+.ph-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.vid-card .ph .play { position: relative; z-index: 1; }
+.vid-card .ph .ph-name { position: relative; z-index: 1; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+button.ph .play svg { width: 30px; height: 30px; color: #fff; filter: drop-shadow(0 1px 4px rgba(0,0,0,.7)); transition: transform .15s; }
+button.ph:hover .play svg { transform: scale(1.12); }
+.vid-meta .seek { background: none; border: 0; padding: 0; cursor: pointer; }
 .vid-meta { padding: 11px 13px; }
 .modality { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; }
 .modality.audio { color: var(--answer); background: var(--answer-bg); }
@@ -367,6 +374,13 @@ body.rail-collapsed .rail { display: none; }
 /* ============ READING COMFORT PANEL ============ */
 .scrim { position: fixed; inset: 0; background: rgba(15,19,24,.4); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 60; }
 .scrim.show { opacity: 1; pointer-events: auto; }
+.confirm-card { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 420px; max-width: 90vw; z-index: 70; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 22px 24px; }
+.confirm-card h3 { font-size: 16px; letter-spacing: -.01em; }
+.confirm-card p { font-size: 13.5px; color: var(--text-soft); margin: 10px 0 0; line-height: 1.5; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.danger-btn { font-size: 13px; padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; background: var(--bad); color: #fff; cursor: pointer; transition: opacity .15s; }
+.danger-btn:hover { opacity: .9; }
+.danger-btn:disabled, .confirm-actions .ghost-btn:disabled { opacity: .55; cursor: default; }
 .rc { position: fixed; top: 0; right: 0; height: 100vh; width: 360px; max-width: 90vw; background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); z-index: 70; transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; }
 .rc.show { transform: none; }
 .rc-head { display: flex; align-items: center; gap: 11px; padding: 18px 20px; border-bottom: 1px solid var(--border); }
@@ -404,8 +418,16 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .rc-reset svg { width: 15px; height: 15px; }
 
 /* ============ LIGHTBOX ============ */
-.lightbox { position: fixed; inset: 0; background: rgba(10,13,17,.86); backdrop-filter: blur(6px); z-index: 90; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 40px; animation: fadeUp .25s ease; }
+.lightbox { position: fixed; inset: 0; background: rgba(10,13,17,.86); z-index: 90; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 40px; animation: fadeUp .25s ease; }
+/* Blur the page behind the overlay via a sibling layer — NOT an ancestor of the
+   <video>, since a backdrop-filter ancestor makes Chromium render video (and its
+   poster) as a black box. */
+.lightbox::before { content: ''; position: absolute; inset: 0; z-index: -1; backdrop-filter: blur(6px); }
 .lightbox .lb-img { width: min(72vw, 760px); height: min(64vh, 560px); border-radius: 14px; box-shadow: var(--shadow-lg); object-fit: contain; background: var(--surface-2); }
+.lightbox .lb-video { width: min(80vw, 900px); max-height: min(70vh, 620px); border-radius: 14px; box-shadow: var(--shadow-lg); background: #000; }
+.lightbox .lb-video-err { display: grid; place-items: center; aspect-ratio: 16/9; color: #cfd4da; font-size: 13.5px; text-align: center; padding: 24px; }
+.lightbox .lb-cap .lb-open { display: inline-block; margin-top: 8px; color: var(--answer); font-weight: 600; text-decoration: none; }
+.lightbox .lb-cap .lb-open:hover { text-decoration: underline; }
 .lightbox .lb-cap { color: #e7eaee; font-size: 13.5px; max-width: 600px; text-align: center; line-height: 1.5; }
 .lightbox .lb-cap b { display: block; font-size: 15px; margin-bottom: 4px; }
 .lightbox .lb-close { position: absolute; top: 24px; right: 28px; width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; display: grid; place-items: center; }
@@ -425,6 +447,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .src-row .name { font-size: 14px; font-weight: 600; }
 .src-row .sub { font-size: 12.5px; color: var(--text-faint); margin-top: 3px; }
 .src-row .cnt { font-size: 12px; color: var(--text-soft); white-space: nowrap; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; }
+.src-del { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-faint); cursor: pointer; transition: all .15s; }
+.src-del:hover { color: var(--bad); border-color: color-mix(in oklab, var(--bad) 45%, transparent); background: color-mix(in oklab, var(--bad) 12%, transparent); }
+.src-del svg { width: 15px; height: 15px; }
 .dropzone { border: 1.5px dashed var(--border-strong); border-radius: 14px; padding: 38px 20px; text-align: center; color: var(--text-soft); background: var(--surface); transition: all .15s; cursor: pointer; }
 .dropzone.drag { border-color: var(--answer); background: var(--answer-bg); color: var(--answer); }
 .dropzone svg { width: 30px; height: 30px; margin-bottom: 10px; }

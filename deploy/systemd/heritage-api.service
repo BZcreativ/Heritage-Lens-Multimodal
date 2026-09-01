@@ -1,0 +1,21 @@
+[Unit]
+Description=Heritage Lens FastAPI (API + built React UI)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=heritage
+Group=heritage
+WorkingDirectory=/home/heritage/heritage-lens-multimodal
+EnvironmentFile=-/home/heritage/heritage-lens-multimodal/config/.env
+Environment="PYTHONPATH=/home/heritage/heritage-lens-multimodal"
+Environment="HL_QDRANT_URL=http://localhost:6333"
+ExecStart=/home/heritage/heritage-lens-multimodal/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

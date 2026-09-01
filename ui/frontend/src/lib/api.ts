@@ -4,6 +4,7 @@
 
 import type {
   AnswerMode,
+  DeleteSourceResponse,
   SearchResult,
   SourcesResponse,
   StatusResponse,
@@ -41,6 +42,11 @@ export async function getStatus(signal?: AbortSignal): Promise<StatusResponse> {
 
 export async function getSources(signal?: AbortSignal): Promise<SourcesResponse> {
   return asJson<SourcesResponse>(await fetch(`${BASE}/sources`, { signal }))
+}
+
+export async function deleteSource(name: string): Promise<DeleteSourceResponse> {
+  const res = await fetch(`${BASE}/sources/${encodeURIComponent(name)}`, { method: 'DELETE' })
+  return asJson<DeleteSourceResponse>(res)
 }
 
 export async function search(

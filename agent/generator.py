@@ -47,10 +47,45 @@ def analyze_metadata(chunks: list[dict]) -> str:
         
     return analysis
 
-def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedback: str = None) -> dict:
+# Answer Mode -> generation behaviour. Each mode sets a different relationship
+# between corpus evidence and interpretation; the block is appended to the system
+# prompt and overrides the base [BACKGROUND] allowance where stricter.
+MODE_INSTRUCTIONS = {
+    "Strict Corpus-Only": (
+        "\nSTRICT CORPUS-ONLY MODE:\n"
+        "Use ONLY the retrieved sources. Do NOT include any '[BACKGROUND — not retrieved]' "
+        "content or any unstated supplementation from general knowledge. Every claim in "
+        "'layer_1_answer' must be traceable to a cited retrieved source. If the corpus does not "
+        "contain the answer, say so explicitly and expand the 'Absences' section in "
+        "'layer_3_transparency' rather than supplementing from outside knowledge."
+    ),
+    "Corpus + Background": (
+        "\nCORPUS + BACKGROUND MODE:\n"
+        "The retrieved corpus is PRIMARY and must dominate the answer. You may add general "
+        "knowledge only to provide context, and it MUST be explicitly tagged "
+        "'[BACKGROUND — not retrieved]'. Corpus evidence, not background, carries the answer."
+    ),
+    "Exploratory": (
+        "\nEXPLORATORY MODE:\n"
+        "The corpus is still consulted, but your purpose is to open possibilities rather than "
+        "settle the answer. You may draw broader connections, comparisons, and hypotheses, and "
+        "suggest avenues for further research. Mark any inference beyond the corpus as "
+        "'[BACKGROUND — not retrieved]' and clearly label hypotheses as such. In "
+        "'layer_3_transparency', foreground the elevated uncertainty and lower the Confidence."
+    ),
+}
+
+MODE_TEMPERATURE = {
+    "Strict Corpus-Only": 0.2,
+    "Corpus + Background": 0.3,
+    "Exploratory": 0.6,
+}
+
+def generate_response(query: str, retrieved_chunks: list[dict], rejection_feedback: str = None, mode: str = "Strict Corpus-Only") -> dict:
     """
     Generates the three-layer answer required by the Heritage Lens Agent using GPT-4o.
     Accepts an optional `rejection_feedback` to correct course if Judge evaluates negatively.
+    `mode` is the UI Answer Mode and controls corpus-grounding strictness and temperature.
     """
     client = OpenAI()
     # Evaluate weak retrieval (only if chunks are literally empty)
@@ -155,6 +190,9 @@ You MUST output your entire response in the EXACT SAME LANGUAGE as the user's qu
         system_prompt += f"\n\n🚨 CRITICAL FEEDBACK FROM JUDGE ON PREVIOUS ATTEMPT:\n{rejection_feedback}\n"
         system_prompt += "You must rewrite 'layer_3_transparency' to specifically address these criticisms! Do NOT use generic boilerplate disclaimers."
 
+    # Answer Mode: defines the relationship between corpus evidence and interpretation.
+    system_prompt += MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["Strict Corpus-Only"])
+
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
@@ -162,7 +200,7 @@ You MUST output your entire response in the EXACT SAME LANGUAGE as the user's qu
             {"role": "user", "content": query}
         ],
         response_format={"type": "json_object"},
-        temperature=0.3,
+        temperature=MODE_TEMPERATURE.get(mode, 0.3),
     )
     
     result = response.choices[0].message.content
